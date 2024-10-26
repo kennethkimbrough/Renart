@@ -23,7 +23,6 @@ Renart is a sophisticated machine learning model designed to authenticate and an
 - TensorFlow.js
 
 ### Setup
-```bash
 # Clone the repository
 git clone https://github.com/yourusername/Renart.git
 
@@ -36,7 +35,8 @@ npm install
 # Start the application
 npm start
 
-📊 Model Architecture
+
+##📊 Model Architecture
 Our model utilizes a deep convolutional neural network (CNN) architecture specifically trained on Renaissance artwork:
 
 Input Layer: 224x224x3 (RGB images)
@@ -44,13 +44,13 @@ Multiple Convolutional Layers
 Dense Layers for Feature Extraction
 Softmax Output Layer for Artist Classification
 
-🎯 Accuracy Metrics
+##🎯 Accuracy Metrics
 Artist Identification: 92% accuracy
 Period Classification: 89% accuracy
 Style Analysis: 87% accuracy
 
 
-📚 Dataset
+##📚 Dataset
 The model is trained on a comprehensive dataset including:
 
 Over 10,000 Renaissance paintings
@@ -59,14 +59,14 @@ Multiple artistic periods
 Various artistic techniques and styles
 
 
-🛠️ Technical Requirements
+##🛠️ Technical Requirements
 Node.js v14+
 RAM: 8GB minimum
 GPU: Recommended for faster processing
 Storage: 2GB minimum for model files
 
 
-🤝 Contributing
+##🤝 Contributing
 We welcome contributions! Please follow these steps:
 
 Fork the repository
@@ -75,11 +75,11 @@ Commit your changes (git commit -am 'Add new feature')
 Push to the branch (git push origin feature/improvement)
 Create a Pull Request
 
-🙏 Acknowledgments
+##🙏 Acknowledgments
 Wikicommons
 
 
-📈 Future Developments
+##📈 Future Developments
 Integration with AR/VR technologies
 Mobile application development
 Extended database of artistic styles
