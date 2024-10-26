@@ -22,67 +22,53 @@ Renart is a sophisticated machine learning model designed to authenticate and an
 - npm (v6 or higher)
 - TensorFlow.js
 
-### Setup
-# Clone the repository
-git clone https://github.com/yourusername/Renart.git
+## 📊 Model Architecture
 
-# Navigate to project directory
-cd Renart
-
-# Install dependencies
-npm install
-
-# Start the application
-npm start
-
-
-##📊 Model Architecture
 Our model utilizes a deep convolutional neural network (CNN) architecture specifically trained on Renaissance artwork:
 
-Input Layer: 224x224x3 (RGB images)
-Multiple Convolutional Layers
-Dense Layers for Feature Extraction
-Softmax Output Layer for Artist Classification
+- Input Layer: 224x224x3 (RGB images)
+- Multiple Convolutional Layers
+- Dense Layers for Feature Extraction
+- Softmax Output Layer for Artist Classification
 
-##🎯 Accuracy Metrics
-Artist Identification: 92% accuracy
-Period Classification: 89% accuracy
-Style Analysis: 87% accuracy
+## 🎯 Accuracy Metrics
 
+- Artist Identification: 92% accuracy
+- Period Classification: 89% accuracy
+- Style Analysis: 87% accuracy
 
-##📚 Dataset
+## 📚 Dataset
+
 The model is trained on a comprehensive dataset including:
+- Over 1000 Renaissance paintings
+- Works from 50+ master artists
+- Multiple artistic periods
+- Various artistic techniques and styles
 
-Over 10,000 Renaissance paintings
-Works from 50+ master artists
-Multiple artistic periods
-Various artistic techniques and styles
+## 🛠️ Technical Requirements
 
+- Node.js v14+
+- RAM: 8GB minimum
+- GPU: Recommended for faster processing
+- Storage: 2GB minimum for model files
 
-##🛠️ Technical Requirements
-Node.js v14+
-RAM: 8GB minimum
-GPU: Recommended for faster processing
-Storage: 2GB minimum for model files
+## 🤝 Contributing
 
-
-##🤝 Contributing
 We welcome contributions! Please follow these steps:
 
-Fork the repository
-Create a new branch (git checkout -b feature/improvement)
-Commit your changes (git commit -am 'Add new feature')
-Push to the branch (git push origin feature/improvement)
-Create a Pull Request
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/improvement`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/improvement`)
+5. Create a Pull Request
 
-##🙏 Acknowledgments
-Wikicommons
+## 🙏 Acknowledgments
 
+- Wikicommons
 
-##📈 Future Developments
-Integration with AR/VR technologies
-Mobile application development
-Extended database of artistic styles
-Real-time analysis capabilities
+## 📈 Future Developments
+
+- Integration with AR/VR technologies
+- Real-time analysis capabilities
 
 
