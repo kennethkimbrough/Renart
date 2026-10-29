@@ -1,0 +1,2 @@
+# Earlier R and TensorFlow.js attempts live in legacy/; keep them out of the language statistics.
+legacy/** linguist-vendored
