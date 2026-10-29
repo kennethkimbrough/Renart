@@ -95,7 +95,7 @@ def predict_probs(model, folder: ImageFolder, batch_size: int = 64, workers: int
 
 def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int = 8,
               batch_size: int = 32, lr: float = 3e-4, arch: str = "resnet18",
-              pretrained: bool = True, workers: int = 2, seed: int = 0) -> dict:
+              pretrained: bool = True, workers: int = 2, seed: int = 0, unfreeze: int = 1) -> dict:
     """Fine-tune, keep the best validation epoch, return history + val probs."""
     torch, _ = _torch()
     torch.manual_seed(seed)
@@ -103,7 +103,7 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    model = build_model(len(train.classes), pretrained=pretrained, arch=arch)
+    model = build_model(len(train.classes), pretrained=pretrained, arch=arch, unfreeze=unfreeze)
     params = [p for p in model.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(epochs, 1))
@@ -142,7 +142,7 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
 
     if best_state is not None:
         model.load_state_dict(best_state)
-    torch.save({"state_dict": model.state_dict(), "classes": train.classes, "arch": arch},
+    torch.save({"state_dict": model.state_dict(), "classes": train.classes, "arch": arch, "unfreeze": unfreeze},
                out_dir / "cnn.pt")
     (out_dir / "cnn_history.json").write_text(json.dumps(history, indent=2))
     return {"history": history, "best_val_acc": best_acc, "val_probs": best_probs,
@@ -152,7 +152,8 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
 def load_cnn(path: Path):
     torch, _ = _torch()
     blob = torch.load(path, map_location="cpu", weights_only=False)
-    model = build_model(len(blob["classes"]), pretrained=False, arch=blob.get("arch", "resnet18"))
+    model = build_model(len(blob["classes"]), pretrained=False, arch=blob.get("arch", "resnet18"),
+                        unfreeze=blob.get("unfreeze", 1))
     model.load_state_dict(blob["state_dict"])
     model.eval()
     return model, blob["classes"]

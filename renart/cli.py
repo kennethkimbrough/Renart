@@ -74,9 +74,10 @@ def cmd_train_cnn(args) -> int:
     print(f"train={len(train)} val={len(val)} classes={train.classes}")
     out = Path(args.out)
     res = train_cnn(train, val, out, epochs=args.epochs, batch_size=args.batch_size,
-                    lr=args.lr, arch=args.arch, workers=args.workers)
+                    lr=args.lr, arch=args.arch, workers=args.workers, unfreeze=args.unfreeze)
     result = evaluate_predictions(val.labels, res["val_probs"], val.classes, f"cnn-{args.arch}")
     result["epochs"] = args.epochs
+    result["unfreeze_stages"] = args.unfreeze
     result["n_train"] = len(train)
     result["history"] = res["history"]
     result["train_seconds"] = round(sum(h["seconds"] for h in res["history"]), 1)
@@ -141,6 +142,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--lr", type=float, default=3e-4)
     c.add_argument("--arch", choices=["resnet18", "efficientnet_b0"], default="resnet18")
     c.add_argument("--workers", type=int, default=2)
+    c.add_argument("--unfreeze", type=int, default=1, help="ResNet stages to fine-tune, counting from the end")
     c.set_defaults(func=cmd_train_cnn)
 
     pr = sub.add_parser("predict", help="rank artists for one image")

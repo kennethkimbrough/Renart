@@ -32,6 +32,9 @@ on:
         type: choice
         options: [resnet18, efficientnet_b0]
         default: resnet18
+      unfreeze:
+        description: "ResNet stages to fine-tune, counting from the end"
+        default: "1"
 
 permissions:
   contents: write
@@ -47,16 +50,17 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             SMOKE="${{ inputs.smoke }}"; PER="${{ inputs.per_artist }}"; MAXA="${{ inputs.max_artists }}"
-            EPOCHS="${{ inputs.epochs }}"; ARCH="${{ inputs.arch }}"
+            EPOCHS="${{ inputs.epochs }}"; ARCH="${{ inputs.arch }}"; UNFREEZE="${{ inputs.unfreeze }}"
           else
             SMOKE=$(jq -r '.smoke // false' .github/train-request.json)
             PER=$(jq -r '.per_artist // 150' .github/train-request.json)
             MAXA=$(jq -r '.max_artists // 10' .github/train-request.json)
             EPOCHS=$(jq -r '.epochs // 8' .github/train-request.json)
             ARCH=$(jq -r '.arch // "resnet18"' .github/train-request.json)
+            UNFREEZE=$(jq -r '.unfreeze // 1' .github/train-request.json)
           fi
           if [ "$SMOKE" = "true" ]; then EPOCHS=1; fi
-          for v in SMOKE PER MAXA EPOCHS ARCH; do
+          for v in SMOKE PER MAXA EPOCHS ARCH UNFREEZE; do
             echo "${v,,}=${!v}" >> "$GITHUB_OUTPUT"; echo "$v=${!v}"
           done
       - uses: actions/setup-python@v5
@@ -86,7 +90,8 @@ jobs:
       - name: Train CNN
         run: |
           python -m renart train-cnn --data data/run --out results \
-            --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" --workers 2
+            --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" \
+            --unfreeze "${{ steps.cfg.outputs.unfreeze }}" --workers 2
       - name: Report
         run: |
           cp data/run/dataset_stats.json results/
