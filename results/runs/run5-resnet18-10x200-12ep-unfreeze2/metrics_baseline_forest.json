@@ -1,0 +1,188 @@
+{
+  "model": "baseline-forest",
+  "n_eval": 327,
+  "n_classes": 10,
+  "accuracy": 0.5229357798165137,
+  "macro_f1": 0.49895865030567227,
+  "chance_accuracy": 0.1,
+  "per_class": {
+    "albrecht-durer": {
+      "support": 40,
+      "accuracy": 0.55
+    },
+    "fra-angelico": {
+      "support": 33,
+      "accuracy": 0.696969696969697
+    },
+    "hans-memling": {
+      "support": 30,
+      "accuracy": 0.43333333333333335
+    },
+    "hieronymus-bosch": {
+      "support": 36,
+      "accuracy": 0.5277777777777778
+    },
+    "leonardo-da-vinci": {
+      "support": 32,
+      "accuracy": 0.84375
+    },
+    "michelangelo": {
+      "support": 25,
+      "accuracy": 0.48
+    },
+    "paolo-veronese": {
+      "support": 26,
+      "accuracy": 0.15384615384615385
+    },
+    "raphael": {
+      "support": 28,
+      "accuracy": 0.32142857142857145
+    },
+    "tintoretto": {
+      "support": 37,
+      "accuracy": 0.35135135135135137
+    },
+    "titian": {
+      "support": 40,
+      "accuracy": 0.725
+    }
+  },
+  "confusion_matrix": [
+    [
+      22,
+      1,
+      2,
+      4,
+      4,
+      2,
+      0,
+      1,
+      1,
+      3
+    ],
+    [
+      0,
+      23,
+      3,
+      1,
+      0,
+      3,
+      0,
+      2,
+      1,
+      0
+    ],
+    [
+      0,
+      9,
+      13,
+      4,
+      0,
+      0,
+      1,
+      0,
+      0,
+      3
+    ],
+    [
+      2,
+      1,
+      4,
+      19,
+      3,
+      0,
+      0,
+      3,
+      2,
+      2
+    ],
+    [
+      2,
+      0,
+      0,
+      0,
+      27,
+      0,
+      0,
+      2,
+      0,
+      1
+    ],
+    [
+      1,
+      0,
+      0,
+      3,
+      6,
+      12,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      5,
+      0,
+      0,
+      4,
+      2,
+      5,
+      7
+    ],
+    [
+      0,
+      4,
+      2,
+      4,
+      1,
+      2,
+      1,
+      9,
+      3,
+      2
+    ],
+    [
+      2,
+      1,
+      1,
+      3,
+      0,
+      2,
+      3,
+      1,
+      13,
+      11
+    ],
+    [
+      0,
+      0,
+      1,
+      2,
+      0,
+      0,
+      1,
+      5,
+      2,
+      29
+    ]
+  ],
+  "classes": [
+    "albrecht-durer",
+    "fra-angelico",
+    "hans-memling",
+    "hieronymus-bosch",
+    "leonardo-da-vinci",
+    "michelangelo",
+    "paolo-veronese",
+    "raphael",
+    "tintoretto",
+    "titian"
+  ],
+  "top3_accuracy": 0.8226299694189603,
+  "feature_dim": 102,
+  "n_train": 1326,
+  "feature_seconds": 42.0
+}

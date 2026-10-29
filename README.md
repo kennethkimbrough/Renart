@@ -15,50 +15,62 @@ gone.
 
 ## Results
 
-Run 3 of the training workflow, 2026-10-29
-([metrics and plots](results/runs/run3-resnet18-10x150-8ep/)): ten painters, up to
-150 WikiArt images each (1452 images, 1163 train / 289 validation),
-224×224, ResNet-18 with the last stage fine-tuned for 8 epochs on a GitHub
-Actions CPU runner (8 minutes of training).
+Run 5 of the training workflow, 2026-10-30
+([metrics and plots](results/runs/run5-resnet18-10x200-12ep-unfreeze2/)): ten painters, every WikiArt image available up to
+200 each (1653 images, 1326 train / 327 validation), 224×224,
+ResNet-18 with the last two residual stages fine-tuned for 12 epochs on a
+GitHub Actions CPU runner (13 minutes of training; the download
+took another 13).
 
 | Model | Accuracy | Macro F1 | Top-3 accuracy |
 |---|---|---|---|
-| baseline-logreg | 0.509 | 0.506 | 0.813 |
-| baseline-forest | 0.502 | 0.492 | 0.827 |
-| cnn-resnet18 | 0.720 | 0.718 | 0.924 |
+| baseline-logreg | 0.526 | 0.517 | 0.813 |
+| baseline-forest | 0.523 | 0.499 | 0.823 |
+| cnn-resnet18 | 0.777 | 0.774 | 0.960 |
 | chance | 0.100 | 0.100 | 0.300 |
 
-The CNN gets about seven in ten validation paintings right and has the
-painter in its top three 92% of the time. The classical
-baseline, 102 colour and stroke features into a logistic regression, reaches
-half; the gap between the two is the value of learned features over
-hand-designed ones for this task.
+The CNN gets 77.7% of validation paintings right and has the painter
+in its top three 96.0% of the time. The classical baseline, 102
+colour and stroke features into a logistic regression, reaches 52.6%; the
+gap between the two is the value of learned features over hand-designed ones
+for this task. An earlier run with fewer images, fewer epochs and only the
+last stage unfrozen ([run 3](results/runs/run3-resnet18-10x150-8ep/)) scored 72.0% / top-3 92.4%,
+so the extra data and capacity were worth about five points.
 
 Per painter (CNN, validation):
 
 | Painter | Images | Accuracy |
 |---|---|---|
-| fra-angelico | 30 | 1.00 |
-| hieronymus-bosch | 30 | 0.80 |
-| hans-memling | 30 | 0.77 |
-| leonardo-da-vinci | 30 | 0.77 |
-| albrecht-durer | 30 | 0.73 |
+| fra-angelico | 33 | 1.00 |
+| albrecht-durer | 40 | 0.88 |
+| hieronymus-bosch | 36 | 0.86 |
+| leonardo-da-vinci | 32 | 0.75 |
+| paolo-veronese | 26 | 0.73 |
+| titian | 40 | 0.72 |
 | michelangelo | 25 | 0.72 |
-| tintoretto | 30 | 0.70 |
-| raphael | 28 | 0.61 |
-| titian | 30 | 0.57 |
-| paolo-veronese | 26 | 0.50 |
+| raphael | 28 | 0.71 |
+| hans-memling | 30 | 0.70 |
+| tintoretto | 37 | 0.65 |
 
-![Confusion matrix for the CNN](results/runs/run3-resnet18-10x150-8ep/confusion_cnn_resnet18.png)
+![Confusion matrix for the CNN](results/runs/run5-resnet18-10x200-12ep-unfreeze2/confusion_cnn_resnet18.png)
 
-The confusions are the ones an art historian would predict: the three
-Venetians (Titian, Tintoretto, Veronese) are confused with each other, and
-Michelangelo's paintings are sometimes read as Leonardo's. Fra Angelico, with
-his flat gold grounds, is never missed. Images per painter in the subset:
-leonardo-da-vinci 150, raphael 143, titian 150, michelangelo 129, fra-angelico 150, tintoretto 150, paolo-veronese 130, albrecht-durer 150, hieronymus-bosch 150, hans-memling 150.
+The confusions are the ones an art historian would predict: the Venetians
+(Titian, Tintoretto, Veronese) are confused with each other: 18 of the 103
+Venetian validation images land on another Venetian. Raphael is read as
+Fra Angelico four times out of 28, and Fra Angelico himself, with his flat
+gold grounds, is never missed. Images per painter in the subset:
+leonardo-da-vinci 164, raphael 143, titian 200, michelangelo 129, fra-angelico 167, tintoretto 187, paolo-veronese 130, albrecht-durer 200, hieronymus-bosch 182, hans-memling 151.
+
+![Grad-CAM heatmaps](results/runs/run5-resnet18-10x200-12ep-unfreeze2/gradcam.png)
+
+Grad-CAM shows where the network looked for six validation images: faces and
+flesh for Dürer and Michelangelo, the crowded figure groups for Bosch and
+Memling. It also shows a weakness of the data: WikiArt mixes drawings and
+studies in with finished paintings, so part of what the model learns for
+Leonardo and Michelangelo is "pen on paper", not brushwork.
 
 Reproduce: push a change to `.github/train-request.json` with
-`{"smoke": false, "per_artist": 150, "max_artists": 10, "epochs": 8, "arch": "resnet18", "unfreeze": 1}`
+`{"smoke": false, "per_artist": 200, "max_artists": 10, "epochs": 12, "arch": "resnet18", "unfreeze": 2}`
 or run the *Train* workflow by hand; the commands are listed below.
 
 ## Pipeline
@@ -137,8 +149,8 @@ baseline, metrics and CLI are tested on synthetic "paintings".
 - **Style ≠ authorship.** Workshop pieces, pupils and later copies share a
   master's style by design. The Venetian confusions in the matrix (Titian,
   Tintoretto, Veronese) are exactly what a style model should get wrong.
-- **Small validation set.** With about 30 images per painter, a single
-  image moves per-class accuracy by over three points. Treat the figures as
+- **Small validation set.** With 25–40 images per painter, a single image
+  moves per-class accuracy by three or four points. Treat the figures as
   indicative, not final.
 - **No test set.** The best epoch is chosen on the same split that is
   reported, which biases the CNN's figure slightly upward. A held-out test
