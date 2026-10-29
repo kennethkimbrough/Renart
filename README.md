@@ -15,7 +15,51 @@ gone.
 
 ## Results
 
-__RESULTS__
+Run 3 of the training workflow, 2026-10-29
+([metrics and plots](results/runs/run3-resnet18-10x150-8ep/)): ten painters, up to
+150 WikiArt images each (1452 images, 1163 train / 289 validation),
+224×224, ResNet-18 with the last stage fine-tuned for 8 epochs on a GitHub
+Actions CPU runner (8 minutes of training).
+
+| Model | Accuracy | Macro F1 | Top-3 accuracy |
+|---|---|---|---|
+| baseline-logreg | 0.509 | 0.506 | 0.813 |
+| baseline-forest | 0.502 | 0.492 | 0.827 |
+| cnn-resnet18 | 0.720 | 0.718 | 0.924 |
+| chance | 0.100 | 0.100 | 0.300 |
+
+The CNN gets about seven in ten validation paintings right and has the
+painter in its top three 92% of the time. The classical
+baseline, 102 colour and stroke features into a logistic regression, reaches
+half; the gap between the two is the value of learned features over
+hand-designed ones for this task.
+
+Per painter (CNN, validation):
+
+| Painter | Images | Accuracy |
+|---|---|---|
+| fra-angelico | 30 | 1.00 |
+| hieronymus-bosch | 30 | 0.80 |
+| hans-memling | 30 | 0.77 |
+| leonardo-da-vinci | 30 | 0.77 |
+| albrecht-durer | 30 | 0.73 |
+| michelangelo | 25 | 0.72 |
+| tintoretto | 30 | 0.70 |
+| raphael | 28 | 0.61 |
+| titian | 30 | 0.57 |
+| paolo-veronese | 26 | 0.50 |
+
+![Confusion matrix for the CNN](results/runs/run3-resnet18-10x150-8ep/confusion_cnn_resnet18.png)
+
+The confusions are the ones an art historian would predict: the three
+Venetians (Titian, Tintoretto, Veronese) are confused with each other, and
+Michelangelo's paintings are sometimes read as Leonardo's. Fra Angelico, with
+his flat gold grounds, is never missed. Images per painter in the subset:
+leonardo-da-vinci 150, raphael 143, titian 150, michelangelo 129, fra-angelico 150, tintoretto 150, paolo-veronese 130, albrecht-durer 150, hieronymus-bosch 150, hans-memling 150.
+
+Reproduce: push a change to `.github/train-request.json` with
+`{"smoke": false, "per_artist": 150, "max_artists": 10, "epochs": 8, "arch": "resnet18", "unfreeze": 1}`
+or run the *Train* workflow by hand; the commands are listed below.
 
 ## Pipeline
 
