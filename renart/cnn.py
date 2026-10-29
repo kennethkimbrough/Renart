@@ -44,14 +44,16 @@ class _FolderDataset:
         return x, int(self.folder.labels[i])
 
 
-def build_model(n_classes: int, pretrained: bool = True, arch: str = "resnet18"):
+def build_model(n_classes: int, pretrained: bool = True, arch: str = "resnet18", unfreeze: int = 1):
+    """`unfreeze` is how many of the last ResNet stages train (1 = layer4 only, 2 = layer3 + layer4)."""
     torch, _torchvision = _torch()
     from torchvision import models
     if arch == "resnet18":
         weights = models.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None
         model = models.resnet18(weights=weights)
+        stages = tuple(f"layer{i}" for i in range(5 - max(1, min(unfreeze, 4)), 5)) + ("fc",)
         for name, p in model.named_parameters():
-            p.requires_grad = name.startswith(("layer4", "fc"))
+            p.requires_grad = name.startswith(stages)
         model.fc = torch.nn.Sequential(torch.nn.Dropout(0.3),
                                        torch.nn.Linear(model.fc.in_features, n_classes))
     elif arch == "efficientnet_b0":

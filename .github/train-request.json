@@ -5,5 +5,5 @@
   "epochs": 12,
   "arch": "resnet18",
   "unfreeze": 2,
-  "run": 4
+  "run": 5
 }
