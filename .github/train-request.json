@@ -1,0 +1,9 @@
+{
+  "smoke": false,
+  "per_artist": 200,
+  "max_artists": 10,
+  "epochs": 12,
+  "arch": "resnet18",
+  "unfreeze": 2,
+  "run": 5
+}

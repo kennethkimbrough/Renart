@@ -1,0 +1,129 @@
+name: Train
+
+# Downloads a WikiArt subset, trains the classical baseline and the ResNet-18
+# fine-tune on CPU, and uploads metrics + confusion matrices.
+#
+# Two ways to start it:
+#   * "Run workflow" in the Actions tab (workflow_dispatch) once this file is
+#     on the default branch;
+#   * on any branch, commit a change to .github/train-request.json. Its fields
+#     (smoke, per_artist, max_artists, epochs, arch) replace the dispatch inputs.
+
+on:
+  push:
+    paths: [".github/train-request.json"]
+  workflow_dispatch:
+    inputs:
+      smoke:
+        description: "Smoke run (2 artists, 20 images each, 1 epoch)"
+        type: boolean
+        default: false
+      per_artist:
+        description: "Images per artist (full run)"
+        default: "150"
+      max_artists:
+        description: "Number of artists (full run)"
+        default: "10"
+      epochs:
+        description: "CNN epochs (full run)"
+        default: "8"
+      arch:
+        description: "CNN architecture"
+        type: choice
+        options: [resnet18, efficientnet_b0]
+        default: resnet18
+      unfreeze:
+        description: "ResNet stages to fine-tune, counting from the end"
+        default: "1"
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve run settings
+        id: cfg
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SMOKE="${{ inputs.smoke }}"; PER="${{ inputs.per_artist }}"; MAXA="${{ inputs.max_artists }}"
+            EPOCHS="${{ inputs.epochs }}"; ARCH="${{ inputs.arch }}"; UNFREEZE="${{ inputs.unfreeze }}"
+          else
+            SMOKE=$(jq -r '.smoke // false' .github/train-request.json)
+            PER=$(jq -r '.per_artist // 150' .github/train-request.json)
+            MAXA=$(jq -r '.max_artists // 10' .github/train-request.json)
+            EPOCHS=$(jq -r '.epochs // 8' .github/train-request.json)
+            ARCH=$(jq -r '.arch // "resnet18"' .github/train-request.json)
+            UNFREEZE=$(jq -r '.unfreeze // 1' .github/train-request.json)
+          fi
+          if [ "$SMOKE" = "true" ]; then EPOCHS=1; fi
+          for v in SMOKE PER MAXA EPOCHS ARCH UNFREEZE; do
+            echo "${v,,}=${!v}" >> "$GITHUB_OUTPUT"; echo "$v=${!v}"
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[data]"
+      - name: Download WikiArt subset
+        env:
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
+        run: |
+          if [ "${{ steps.cfg.outputs.smoke }}" = "true" ]; then
+            python -m renart download --smoke --data data/run
+          else
+            python -m renart download --data data/run \
+              --per-artist "${{ steps.cfg.outputs.per }}" --max-artists "${{ steps.cfg.outputs.maxa }}"
+          fi
+          cat data/run/dataset_stats.json
+      - name: Train classical baseline
+        run: |
+          python -m renart train-baseline --data data/run --out results --classifier logreg
+          python -m renart train-baseline --data data/run --out results --classifier forest
+      - name: Train CNN
+        run: |
+          python -m renart train-cnn --data data/run --out results \
+            --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" \
+            --unfreeze "${{ steps.cfg.outputs.unfreeze }}" --workers 2
+      - name: Grad-CAM
+        run: python -m renart gradcam --model results/cnn.pt --data data/run --out results/gradcam.png --n 6
+      - name: Report
+        run: |
+          cp data/run/dataset_stats.json results/
+          python -m renart report results/metrics_*.json | tee results/comparison.md
+          {
+            echo "## Results (smoke=${{ steps.cfg.outputs.smoke }})"
+            echo
+            cat results/comparison.md
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit results to the branch
+        run: |
+          mkdir -p "results/latest"
+          cp results/*.json results/*.png results/*.md results/latest/
+          git config user.name "Kenneth Kimbrough"
+          git config user.email "146112017+kennethkimbrough@users.noreply.github.com"
+          git add results/latest
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "Record training results from run ${{ github.run_number }} (smoke=${{ steps.cfg.outputs.smoke }}) [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ github.run_number }}
+          path: |
+            results/*.json
+            results/*.png
+            results/*.md
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-${{ github.run_number }}
+          path: results/cnn.pt
+          retention-days: 14

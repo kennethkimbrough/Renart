@@ -1,0 +1,246 @@
+{
+  "model": "cnn-resnet18",
+  "n_eval": 289,
+  "n_classes": 10,
+  "accuracy": 0.7197231833910035,
+  "macro_f1": 0.717541785447837,
+  "chance_accuracy": 0.1,
+  "per_class": {
+    "albrecht-durer": {
+      "support": 30,
+      "accuracy": 0.7333333333333333
+    },
+    "fra-angelico": {
+      "support": 30,
+      "accuracy": 1.0
+    },
+    "hans-memling": {
+      "support": 30,
+      "accuracy": 0.7666666666666667
+    },
+    "hieronymus-bosch": {
+      "support": 30,
+      "accuracy": 0.8
+    },
+    "leonardo-da-vinci": {
+      "support": 30,
+      "accuracy": 0.7666666666666667
+    },
+    "michelangelo": {
+      "support": 25,
+      "accuracy": 0.72
+    },
+    "paolo-veronese": {
+      "support": 26,
+      "accuracy": 0.5
+    },
+    "raphael": {
+      "support": 28,
+      "accuracy": 0.6071428571428571
+    },
+    "tintoretto": {
+      "support": 30,
+      "accuracy": 0.7
+    },
+    "titian": {
+      "support": 30,
+      "accuracy": 0.5666666666666667
+    }
+  },
+  "confusion_matrix": [
+    [
+      22,
+      0,
+      2,
+      0,
+      3,
+      1,
+      0,
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      30,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      4,
+      23,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      1,
+      1,
+      24,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1
+    ],
+    [
+      1,
+      0,
+      0,
+      1,
+      23,
+      1,
+      0,
+      2,
+      2,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      4,
+      18,
+      0,
+      1,
+      2,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      13,
+      2,
+      5,
+      5
+    ],
+    [
+      0,
+      5,
+      2,
+      0,
+      2,
+      0,
+      0,
+      17,
+      1,
+      1
+    ],
+    [
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      21,
+      4
+    ],
+    [
+      0,
+      0,
+      2,
+      0,
+      0,
+      1,
+      0,
+      5,
+      5,
+      17
+    ]
+  ],
+  "classes": [
+    "albrecht-durer",
+    "fra-angelico",
+    "hans-memling",
+    "hieronymus-bosch",
+    "leonardo-da-vinci",
+    "michelangelo",
+    "paolo-veronese",
+    "raphael",
+    "tintoretto",
+    "titian"
+  ],
+  "top3_accuracy": 0.9238754325259516,
+  "epochs": 8,
+  "n_train": 1163,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.5815810763620655,
+      "train_acc": 0.5210662080825451,
+      "val_acc": 0.6366782006920415,
+      "seconds": 63.2
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8699300791411593,
+      "train_acc": 0.7867583834909716,
+      "val_acc": 0.6678200692041523,
+      "seconds": 62.7
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.662933629848582,
+      "train_acc": 0.8701633705932932,
+      "val_acc": 0.71280276816609,
+      "seconds": 62.3
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.5477996793986392,
+      "train_acc": 0.9269131556319863,
+      "val_acc": 0.71280276816609,
+      "seconds": 61.1
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.4654996240846268,
+      "train_acc": 0.9570077386070507,
+      "val_acc": 0.7197231833910035,
+      "seconds": 61.2
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.4244506801906989,
+      "train_acc": 0.9759243336199485,
+      "val_acc": 0.7197231833910035,
+      "seconds": 63.5
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.40310298053744736,
+      "train_acc": 0.9845227858985383,
+      "val_acc": 0.7162629757785467,
+      "seconds": 63.5
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.3922854053594896,
+      "train_acc": 0.9879621668099742,
+      "val_acc": 0.7162629757785467,
+      "seconds": 63.4
+    }
+  ],
+  "train_seconds": 500.9
+}

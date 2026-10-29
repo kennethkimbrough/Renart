@@ -1,74 +1,173 @@
-# Renart - Renaissance Art Classifier
+# Renart — style-based artist attribution for Renaissance paintings
 
-Renart is a sophisticated machine learning model designed to authenticate and analyze Renaissance artwork. By analyzing image characteristics, it can identify artists, authenticate pieces, and provide detailed analysis of artistic elements such as brush strokes, creation period, and distinctive features. This tool aims to assist galleries, museums, and art experts in verifying artwork authenticity and discovering forgeries.
+Renart takes a photograph of a Renaissance painting and ranks which of ten
+painters most likely made it, from the painting's style alone. It is a
+reproducible pipeline, not a claim: every number below comes from a GitHub
+Actions run whose metrics and confusion matrices are committed under
+`results/`, with the command that produced them.
 
-## 🎨 Features
+What it is **not**: an authentication or forgery-detection tool. A classifier
+trained on style can tell a Titian from a Memling; it cannot tell a Titian
+from a good copy of a Titian, and it says nothing about materials, age or
+provenance. The earlier README described the project in those terms with
+accuracy figures that no code in the repository produced. Those claims are
+gone.
 
-- **Artist Identification**: Accurately identifies the artist based on their unique style and techniques
-- **Artwork Authentication**: Helps detect potential forgeries by analyzing artistic elements
-- **Detailed Analysis**: Provides comprehensive information about:
-  - Brush stroke patterns
-  - Creation period estimation
-  - Material composition
-  - Artistic techniques used
-  - Historical context
-- **High-Resolution Image Processing**: Supports detailed examination of high-resolution artwork images
-- **Multi-Period Recognition**: Covers various Renaissance periods and artistic schools
+## Results
 
-## 🚀 Installation
+Run 5 of the training workflow, 2026-10-30
+([metrics and plots](results/runs/run5-resnet18-10x200-12ep-unfreeze2/)): ten painters, every WikiArt image available up to
+200 each (1653 images, 1326 train / 327 validation), 224×224,
+ResNet-18 with the last two residual stages fine-tuned for 12 epochs on a
+GitHub Actions CPU runner (13 minutes of training; the download
+took another 13).
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm (v6 or higher)
-- TensorFlow.js
+| Model | Accuracy | Macro F1 | Top-3 accuracy |
+|---|---|---|---|
+| baseline-logreg | 0.526 | 0.517 | 0.813 |
+| baseline-forest | 0.523 | 0.499 | 0.823 |
+| cnn-resnet18 | 0.777 | 0.774 | 0.960 |
+| chance | 0.100 | 0.100 | 0.300 |
 
-## 📊 Model Architecture
+The CNN gets 77.7% of validation paintings right and has the painter
+in its top three 96.0% of the time. The classical baseline, 102
+colour and stroke features into a logistic regression, reaches 52.6%; the
+gap between the two is the value of learned features over hand-designed ones
+for this task. An earlier run with fewer images, fewer epochs and only the
+last stage unfrozen ([run 3](results/runs/run3-resnet18-10x150-8ep/)) scored 72.0% / top-3 92.4%,
+so the extra data and capacity were worth about five points.
 
-Our model utilizes a deep convolutional neural network (CNN) architecture specifically trained on Renaissance artwork:
+Per painter (CNN, validation):
 
-- Input Layer: 224x224x3 (RGB images)
-- Multiple Convolutional Layers
-- Dense Layers for Feature Extraction
-- Softmax Output Layer for Artist Classification
+| Painter | Images | Accuracy |
+|---|---|---|
+| fra-angelico | 33 | 1.00 |
+| albrecht-durer | 40 | 0.88 |
+| hieronymus-bosch | 36 | 0.86 |
+| leonardo-da-vinci | 32 | 0.75 |
+| paolo-veronese | 26 | 0.73 |
+| titian | 40 | 0.72 |
+| michelangelo | 25 | 0.72 |
+| raphael | 28 | 0.71 |
+| hans-memling | 30 | 0.70 |
+| tintoretto | 37 | 0.65 |
 
-## 🎯 Accuracy Metrics
+![Confusion matrix for the CNN](results/runs/run5-resnet18-10x200-12ep-unfreeze2/confusion_cnn_resnet18.png)
 
-- Artist Identification: 92% accuracy
-- Period Classification: 89% accuracy
-- Style Analysis: 87% accuracy
+The confusions are the ones an art historian would predict: the Venetians
+(Titian, Tintoretto, Veronese) are confused with each other: 18 of the 103
+Venetian validation images land on another Venetian. Raphael is read as
+Fra Angelico four times out of 28, and Fra Angelico himself, with his flat
+gold grounds, is never missed. Images per painter in the subset:
+leonardo-da-vinci 164, raphael 143, titian 200, michelangelo 129, fra-angelico 167, tintoretto 187, paolo-veronese 130, albrecht-durer 200, hieronymus-bosch 182, hans-memling 151.
 
-## 📚 Dataset
+![Grad-CAM heatmaps](results/runs/run5-resnet18-10x200-12ep-unfreeze2/gradcam.png)
 
-The model is trained on a comprehensive dataset including:
-- Over 1000 Renaissance paintings
-- Works from 50+ master artists
-- Multiple artistic periods
-- Various artistic techniques and styles
+Grad-CAM shows where the network looked for six validation images: faces and
+flesh for Dürer and Michelangelo, the crowded figure groups for Bosch and
+Memling. It also shows a weakness of the data: WikiArt mixes drawings and
+studies in with finished paintings, so part of what the model learns for
+Leonardo and Michelangelo is "pen on paper", not brushwork.
 
-## 🛠️ Technical Requirements
+Reproduce: push a change to `.github/train-request.json` with
+`{"smoke": false, "per_artist": 200, "max_artists": 10, "epochs": 12, "arch": "resnet18", "unfreeze": 2}`
+or run the *Train* workflow by hand; the commands are listed below.
 
-- Node.js v14+
-- RAM: 8GB minimum
-- GPU: Recommended for faster processing
-- Storage: 2GB minimum for model files
+## Pipeline
 
-## 🤝 Contributing
+```mermaid
+flowchart LR
+  hf[(huggan/wikiart<br/>parquet shards)] -->|scan artist column,<br/>fetch matching rows| dl[renart download]
+  dl --> data[data/run/train + val<br/>224x224 JPEG per artist]
+  data --> feat[renart.features<br/>colour palette + histograms,<br/>gradient / stroke statistics]
+  feat --> base[renart train-baseline<br/>logistic regression / random forest]
+  data --> cnn[renart train-cnn<br/>ResNet-18, ImageNet weights,<br/>last stages fine-tuned on CPU]
+  base --> metrics[metrics JSON + confusion matrix]
+  cnn --> metrics
+  cnn --> cam[renart gradcam]
+```
 
-We welcome contributions! Please follow these steps:
+**Data.** `renart download` builds a balanced subset of the
+[`huggan/wikiart`](https://huggingface.co/datasets/huggan/wikiart) dataset.
+Its `artist` column is an integer class label, so the script reads the label
+names from the dataset metadata, maps the configured painter slugs to ids, and
+scans the parquet shards reading only the `artist` column. Image bytes are
+fetched just for the row groups that contain wanted painters, which keeps the
+transfer far below the full dataset. Images are resized on the short side and
+centre-cropped to 224×224 so paintings are not stretched. Every fifth image
+per painter goes to validation.
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/improvement`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/improvement`)
-5. Create a Pull Request
+**Classical baseline.** `renart.features` computes 102 hand-crafted features
+per image: RGB and hue histograms, circular hue statistics, a 5-colour
+k-means palette sorted by weight, and at two scales a Sobel-gradient
+orientation histogram, anisotropy, orientation entropy, a curvature proxy
+along strong edges, Laplacian sharpness and edge density. These port the
+useful ideas from the project's first R scripts (`legacy/r/coloranalysis.r`,
+`legacy/r/paintstroke.r`) into something that runs on a photograph. A
+standardised logistic regression (or random forest) is trained on them.
 
-## 🙏 Acknowledgments
+**CNN.** `renart.cnn` fine-tunes an ImageNet-pretrained ResNet-18 with the
+last residual stage(s) and the classifier unfrozen, AdamW, cosine schedule,
+label smoothing, and light augmentation (random resized crop, flip, colour
+jitter). It keeps the epoch with the best validation accuracy. Training runs
+on the CPU of a GitHub Actions runner.
 
-- Wikicommons
+**Evaluation.** `renart.metrics` reports accuracy, macro-F1, top-3 accuracy,
+per-class accuracy and a confusion matrix for both models on the same
+validation split, against a chance rate of 1/10.
 
-## 📈 Future Developments
+## Reproduce it
 
-- Integration with AR/VR technologies
-- Real-time analysis capabilities
+Everything runs from one workflow, `.github/workflows/train.yml`:
 
+- from the Actions tab, *Train → Run workflow* (once this branch is merged);
+- or on any branch, change `.github/train-request.json` and push. The commit
+  starts the run; results land in `results/latest/` as a commit on the same
+  branch.
 
+Locally, with a folder of images laid out as `data/<split>/<artist>/*.jpg`:
+
+```sh
+pip install -e ".[data,train,dev]"           # torch CPU wheels: see the workflow
+python -m renart download --data data/run    # needs network; --smoke for a 2-artist test
+python -m renart train-baseline --data data/run --out results
+python -m renart train-cnn --data data/run --out results --epochs 8
+python -m renart gradcam --model results/cnn.pt --data data/run
+python -m renart predict --model results/cnn.pt some-painting.jpg
+python -m renart report results/metrics_*.json
+```
+
+`pytest` runs in seconds with no network and no torch: the feature extractor,
+baseline, metrics and CLI are tested on synthetic "paintings".
+
+## Limitations
+
+- **Ten painters, WikiArt images.** The model only chooses among the ten
+  classes it saw; anything else is forced into one of them. WikiArt images
+  vary in resolution, colour balance and framing, and some are details or
+  studies rather than finished paintings.
+- **Style ≠ authorship.** Workshop pieces, pupils and later copies share a
+  master's style by design. The Venetian confusions in the matrix (Titian,
+  Tintoretto, Veronese) are exactly what a style model should get wrong.
+- **Small validation set.** With 25–40 images per painter, a single image
+  moves per-class accuracy by three or four points. Treat the figures as
+  indicative, not final.
+- **No test set.** The best epoch is chosen on the same split that is
+  reported, which biases the CNN's figure slightly upward. A held-out test
+  split is the obvious next step.
+- **CPU budget.** ResNet-18 at 224 px for a handful of epochs. A larger
+  backbone, higher resolution and more images per painter would all help.
+
+## Layout
+
+```
+renart/        the package: config, data, download, features, baseline, cnn, gradcam, metrics, cli
+tests/         pytest suite on synthetic images (no network, no torch)
+results/       latest/ = most recent Actions run; runs/ = kept runs referenced above
+legacy/        the earlier R and TensorFlow.js attempts and the first dataset script
+.github/       ci.yml (ruff + pytest) and train.yml (the training run)
+```
+
+## License
+
+MIT
