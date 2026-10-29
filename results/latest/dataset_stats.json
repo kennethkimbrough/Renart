@@ -1,0 +1,34 @@
+{
+  "artists": [
+    "leonardo-da-vinci",
+    "raphael"
+  ],
+  "counts": {
+    "leonardo-da-vinci": {
+      "train": 16,
+      "val": 4
+    },
+    "raphael": {
+      "train": 16,
+      "val": 4
+    }
+  },
+  "total_images": 40,
+  "source": "huggan/wikiart@main",
+  "images_per_artist_cap": 20,
+  "rows_scanned": 9049,
+  "seconds": 38.0,
+  "image_size": [
+    224,
+    224
+  ],
+  "missing_from_dataset": [
+    "sandro-botticelli",
+    "giovanni-bellini",
+    "andrea-mantegna",
+    "piero-della-francesca",
+    "giorgione",
+    "pieter-bruegel-the-elder",
+    "jan-van-eyck"
+  ]
+}
