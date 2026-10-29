@@ -184,5 +184,5 @@
   "top3_accuracy": 0.8226299694189603,
   "feature_dim": 102,
   "n_train": 1326,
-  "feature_seconds": 42.0
+  "feature_seconds": 31.0
 }

@@ -57,7 +57,7 @@
   "source": "huggan/wikiart@main",
   "images_per_artist_cap": 200,
   "rows_scanned": 81444,
-  "seconds": 802.9,
+  "seconds": 718.3,
   "image_size": [
     224,
     224
