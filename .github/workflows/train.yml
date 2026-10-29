@@ -1,9 +1,17 @@
 name: Train
 
-# Manual run. Downloads a WikiArt subset, trains the classical baseline and the
-# ResNet-18 fine-tune on CPU, and uploads metrics + confusion matrices.
+# Downloads a WikiArt subset, trains the classical baseline and the ResNet-18
+# fine-tune on CPU, and uploads metrics + confusion matrices.
+#
+# Two ways to start it:
+#   * "Run workflow" in the Actions tab (workflow_dispatch) once this file is
+#     on the default branch;
+#   * on any branch, commit a change to .github/train-request.json. Its fields
+#     (smoke, per_artist, max_artists, epochs, arch) replace the dispatch inputs.
 
 on:
+  push:
+    paths: [".github/train-request.json"]
   workflow_dispatch:
     inputs:
       smoke:
@@ -31,6 +39,23 @@ jobs:
     timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve run settings
+        id: cfg
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SMOKE="${{ inputs.smoke }}"; PER="${{ inputs.per_artist }}"; MAXA="${{ inputs.max_artists }}"
+            EPOCHS="${{ inputs.epochs }}"; ARCH="${{ inputs.arch }}"
+          else
+            SMOKE=$(jq -r '.smoke // false' .github/train-request.json)
+            PER=$(jq -r '.per_artist // 150' .github/train-request.json)
+            MAXA=$(jq -r '.max_artists // 10' .github/train-request.json)
+            EPOCHS=$(jq -r '.epochs // 8' .github/train-request.json)
+            ARCH=$(jq -r '.arch // "resnet18"' .github/train-request.json)
+          fi
+          if [ "$SMOKE" = "true" ]; then EPOCHS=1; fi
+          for v in SMOKE PER MAXA EPOCHS ARCH; do
+            echo "${v,,}=${!v}" >> "$GITHUB_OUTPUT"; echo "$v=${!v}"
+          done
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -44,11 +69,11 @@ jobs:
         env:
           HF_HUB_DISABLE_PROGRESS_BARS: "1"
         run: |
-          if [ "${{ inputs.smoke }}" = "true" ]; then
+          if [ "${{ steps.cfg.outputs.smoke }}" = "true" ]; then
             python -m renart download --smoke --data data/run
           else
             python -m renart download --data data/run \
-              --per-artist "${{ inputs.per_artist }}" --max-artists "${{ inputs.max_artists }}"
+              --per-artist "${{ steps.cfg.outputs.per }}" --max-artists "${{ steps.cfg.outputs.maxa }}"
           fi
           cat data/run/dataset_stats.json
       - name: Train classical baseline
@@ -57,16 +82,14 @@ jobs:
           python -m renart train-baseline --data data/run --out results --classifier forest
       - name: Train CNN
         run: |
-          EPOCHS="${{ inputs.epochs }}"
-          if [ "${{ inputs.smoke }}" = "true" ]; then EPOCHS=1; fi
           python -m renart train-cnn --data data/run --out results \
-            --epochs "$EPOCHS" --arch "${{ inputs.arch }}" --workers 2
+            --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" --workers 2
       - name: Report
         run: |
           cp data/run/dataset_stats.json results/
           python -m renart report results/metrics_*.json | tee results/comparison.md
           {
-            echo "## Results (smoke=${{ inputs.smoke }})"
+            echo "## Results (smoke=${{ steps.cfg.outputs.smoke }})"
             echo
             cat results/comparison.md
           } >> "$GITHUB_STEP_SUMMARY"
