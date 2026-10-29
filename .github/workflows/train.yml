@@ -92,6 +92,8 @@ jobs:
           python -m renart train-cnn --data data/run --out results \
             --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" \
             --unfreeze "${{ steps.cfg.outputs.unfreeze }}" --workers 2
+      - name: Grad-CAM
+        run: python -m renart gradcam --model results/cnn.pt --data data/run --out results/gradcam.png --n 6
       - name: Report
         run: |
           cp data/run/dataset_stats.json results/

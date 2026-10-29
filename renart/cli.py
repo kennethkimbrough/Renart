@@ -4,6 +4,7 @@
     train-baseline  hand-crafted features + logistic regression / random forest
     train-cnn       fine-tune ResNet-18 (needs torch)
     predict         top-3 artists for an image with a saved model
+    gradcam         heatmaps of what the CNN looked at (needs torch)
     report          merge metrics JSON files into a Markdown table
 """
 
@@ -107,6 +108,14 @@ def cmd_predict(args) -> int:
     return 0
 
 
+def cmd_gradcam(args) -> int:
+    from .gradcam import render_gradcam
+    _, val = load_dataset(Path(args.data))
+    out = render_gradcam(Path(args.model), val, Path(args.out), n=args.n)
+    print(f"wrote {out}")
+    return 0
+
+
 def cmd_report(args) -> int:
     from .metrics import markdown_table
     results = [json.loads(Path(p).read_text()) for p in args.metrics]
@@ -149,6 +158,13 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--model", required=True, help="results/cnn.pt or results/baseline_logreg.pkl")
     pr.add_argument("image")
     pr.set_defaults(func=cmd_predict)
+
+    g = sub.add_parser("gradcam", help="Grad-CAM heatmaps for a few validation images")
+    g.add_argument("--model", default="results/cnn.pt")
+    g.add_argument("--data", default="data/renaissance")
+    g.add_argument("--out", default="results/gradcam.png")
+    g.add_argument("--n", type=int, default=6)
+    g.set_defaults(func=cmd_gradcam)
 
     r = sub.add_parser("report", help="print a Markdown comparison table")
     r.add_argument("metrics", nargs="+")
