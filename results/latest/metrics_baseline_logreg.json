@@ -1,34 +1,34 @@
 {
   "model": "baseline-logreg",
-  "n_eval": 289,
+  "n_eval": 327,
   "n_classes": 10,
-  "accuracy": 0.5086505190311419,
-  "macro_f1": 0.5056594132754225,
+  "accuracy": 0.5259938837920489,
+  "macro_f1": 0.516595402750399,
   "chance_accuracy": 0.1,
   "per_class": {
     "albrecht-durer": {
-      "support": 30,
-      "accuracy": 0.5
+      "support": 40,
+      "accuracy": 0.55
     },
     "fra-angelico": {
-      "support": 30,
-      "accuracy": 0.6333333333333333
+      "support": 33,
+      "accuracy": 0.6363636363636364
     },
     "hans-memling": {
       "support": 30,
-      "accuracy": 0.5666666666666667
+      "accuracy": 0.6
     },
     "hieronymus-bosch": {
-      "support": 30,
-      "accuracy": 0.5
+      "support": 36,
+      "accuracy": 0.6111111111111112
     },
     "leonardo-da-vinci": {
-      "support": 30,
-      "accuracy": 0.7
+      "support": 32,
+      "accuracy": 0.6875
     },
     "michelangelo": {
       "support": 25,
-      "accuracy": 0.44
+      "accuracy": 0.4
     },
     "paolo-veronese": {
       "support": 26,
@@ -39,48 +39,48 @@
       "accuracy": 0.32142857142857145
     },
     "tintoretto": {
-      "support": 30,
-      "accuracy": 0.43333333333333335
+      "support": 37,
+      "accuracy": 0.4594594594594595
     },
     "titian": {
-      "support": 30,
-      "accuracy": 0.6
+      "support": 40,
+      "accuracy": 0.55
     }
   },
   "confusion_matrix": [
     [
-      15,
+      22,
       0,
-      2,
+      3,
       1,
       1,
-      6,
+      7,
       0,
-      2,
+      3,
       2,
       1
     ],
     [
+      1,
+      21,
+      2,
+      2,
       0,
-      19,
       2,
       1,
-      0,
-      2,
-      2,
       3,
       1,
       0
     ],
     [
       1,
-      7,
-      17,
+      5,
+      18,
       2,
       0,
       0,
       1,
-      0,
+      1,
       1,
       1
     ],
@@ -88,85 +88,85 @@
       1,
       3,
       1,
-      15,
-      2,
-      1,
-      1,
-      4,
+      22,
       0,
+      1,
+      1,
+      3,
+      1,
+      3
+    ],
+    [
+      1,
+      3,
+      0,
+      1,
+      22,
+      1,
+      0,
+      3,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      0,
+      3,
+      6,
+      10,
+      0,
+      2,
+      2,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      5,
+      1,
+      0,
+      9,
+      3,
+      3,
       2
     ],
     [
       1,
-      1,
-      0,
-      1,
-      21,
       2,
-      0,
+      6,
+      2,
+      1,
       3,
-      0,
+      1,
+      9,
+      2,
       1
     ],
     [
+      1,
+      1,
+      2,
+      3,
+      1,
+      1,
+      3,
+      3,
+      17,
+      5
+    ],
+    [
+      2,
       0,
+      2,
+      1,
       0,
       0,
       3,
       7,
-      11,
-      0,
       3,
-      1,
-      0
-    ],
-    [
-      0,
-      0,
-      2,
-      4,
-      2,
-      0,
-      9,
-      3,
-      2,
-      4
-    ],
-    [
-      1,
-      2,
-      5,
-      2,
-      1,
-      3,
-      1,
-      9,
-      3,
-      1
-    ],
-    [
-      0,
-      1,
-      1,
-      1,
-      1,
-      3,
-      3,
-      3,
-      13,
-      4
-    ],
-    [
-      0,
-      0,
-      2,
-      1,
-      0,
-      0,
-      1,
-      5,
-      3,
-      18
+      22
     ]
   ],
   "classes": [
@@ -181,8 +181,8 @@
     "tintoretto",
     "titian"
   ],
-  "top3_accuracy": 0.8131487889273357,
+  "top3_accuracy": 0.8134556574923547,
   "feature_dim": 102,
-  "n_train": 1163,
-  "feature_seconds": 46.5
+  "n_train": 1326,
+  "feature_seconds": 42.1
 }
