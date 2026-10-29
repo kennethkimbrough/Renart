@@ -1,23 +1,63 @@
 {
   "artists": [
+    "albrecht-durer",
+    "fra-angelico",
+    "hans-memling",
+    "hieronymus-bosch",
     "leonardo-da-vinci",
-    "raphael"
+    "michelangelo",
+    "paolo-veronese",
+    "raphael",
+    "tintoretto",
+    "titian"
   ],
   "counts": {
     "leonardo-da-vinci": {
-      "train": 16,
-      "val": 4
+      "train": 120,
+      "val": 30
     },
     "raphael": {
-      "train": 16,
-      "val": 4
+      "train": 115,
+      "val": 28
+    },
+    "titian": {
+      "train": 120,
+      "val": 30
+    },
+    "michelangelo": {
+      "train": 104,
+      "val": 25
+    },
+    "fra-angelico": {
+      "train": 120,
+      "val": 30
+    },
+    "tintoretto": {
+      "train": 120,
+      "val": 30
+    },
+    "paolo-veronese": {
+      "train": 104,
+      "val": 26
+    },
+    "albrecht-durer": {
+      "train": 120,
+      "val": 30
+    },
+    "hieronymus-bosch": {
+      "train": 120,
+      "val": 30
+    },
+    "hans-memling": {
+      "train": 120,
+      "val": 30
     }
   },
-  "total_images": 40,
+  "total_images": 1452,
   "source": "huggan/wikiart@main",
-  "images_per_artist_cap": 20,
-  "rows_scanned": 9049,
-  "seconds": 38.0,
+  "images_per_artist_cap": 150,
+  "rows_scanned": 81444,
+  "seconds": 273.1,
   "image_size": [
     224,
     224
