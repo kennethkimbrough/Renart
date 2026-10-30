@@ -1,4 +1,4 @@
-# Renart — style-based artist attribution for Renaissance paintings
+# Renart: style-based artist attribution for Renaissance paintings
 
 Renart takes a photograph of a Renaissance painting and ranks which of ten
 painters most likely made it, from the painting's style alone. It is a
