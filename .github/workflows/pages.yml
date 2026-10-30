@@ -83,47 +83,58 @@ jobs:
       - name: Run the demo end to end in a headless browser
         run: |
           pip install playwright
-          python -m playwright install --with-deps chromium
+          python -m playwright install --with-deps chromium || { echo '::error title=Playwright::browser install failed'; exit 1; }
           python - <<'EOF'
-          import sys, time
-          from playwright.sync_api import sync_playwright
-          url = "https://kennethkimbrough.github.io/Renart/demo.html"
-          with sync_playwright() as p:
-              browser = p.chromium.launch()
-              page = browser.new_page()
-              errors = []
-              page.on("pageerror", lambda e: errors.append(str(e)))
-              page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-              # The page may have been published seconds ago; give the CDN a few tries.
-              for attempt in range(8):
-                  page.goto(url, wait_until="networkidle")
-                  if page.locator("#samples button").count() > 0:
-                      break
-                  time.sleep(15)
-              n = page.locator("#samples button").count()
-              print(f"{n} sample paintings offered")
-              if n == 0:
-                  print("no samples: the demo page has no released model to run, skipping the inference check")
-                  browser.close(); sys.exit(0)
-              page.locator("#samples button").first.click()
-              try:
-                  page.wait_for_selector("#result:not([hidden])", timeout=240_000)  # model download + first run
-              except Exception as exc:
+          import sys, traceback
+          def main():
+              import sys, time
+              from playwright.sync_api import sync_playwright
+              url = "https://kennethkimbrough.github.io/Renart/demo.html"
+              with sync_playwright() as p:
+                  browser = p.chromium.launch()
+                  page = browser.new_page()
+                  errors = []
+                  page.on("pageerror", lambda e: errors.append(str(e)))
+                  page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+                  # The page may have been published seconds ago; give the CDN a few tries.
+                  for attempt in range(8):
+                      page.goto(url, wait_until="networkidle")
+                      if page.locator("#samples button").count() > 0:
+                          break
+                      time.sleep(15)
+                  n = page.locator("#samples button").count()
+                  print(f"{n} sample paintings offered")
+                  if n == 0:
+                      print("no samples: the demo page has no released model to run, skipping the inference check")
+                      browser.close(); sys.exit(0)
+                  page.locator("#samples button").first.click()
+                  try:
+                      page.wait_for_selector("#result:not([hidden])", timeout=240_000)  # model download + first run
+                  except Exception as exc:
+                      status = page.locator("#status-text").inner_text()
+                      msg = f"status={status!r} | console={errors[-5:]!r} | {type(exc).__name__}"
+                      print("::error title=Demo did not answer::" + msg.replace("\n", " "))
+                      browser.close(); sys.exit(1)
+                  verdict = page.locator("#verdict").inner_text()
+                  reveal = page.locator("#reveal").inner_text()
+                  print("verdict:", verdict.replace("\n", " | "))
+                  print("reveal:", reveal)
                   status = page.locator("#status-text").inner_text()
-                  msg = f"status={status!r} | console={errors[-5:]!r} | {type(exc).__name__}"
-                  print("::error title=Demo did not answer::" + msg.replace("\n", " "))
-                  browser.close(); sys.exit(1)
-              verdict = page.locator("#verdict").inner_text()
-              reveal = page.locator("#reveal").inner_text()
-              print("verdict:", verdict.replace("\n", " | "))
-              print("reveal:", reveal)
-              status = page.locator("#status-text").inner_text()
-              if "Could not run" in status:
-                  print("::error title=Demo failed::" + status.replace("\n", " ") + f" | console={errors[-5:]!r}")
-                  sys.exit(1)
-              assert reveal.startswith("It is by"), "the sample's true painter was not revealed"
-              if errors:
-                  print("console errors:", *errors, sep="\n  ")
-              browser.close()
-          print("::notice title=Demo::The browser demo loaded the ONNX model and attributed a test painting end to end")
+                  if "Could not run" in status:
+                      print("::error title=Demo failed::" + status.replace("\n", " ") + f" | console={errors[-5:]!r}")
+                      sys.exit(1)
+                  assert reveal.startswith("It is by"), "the sample's true painter was not revealed"
+                  if errors:
+                      print("console errors:", *errors, sep="\n  ")
+                  browser.close()
+              print("::notice title=Demo::The browser demo loaded the ONNX model and attributed a test painting end to end")
+
+          try:
+              main()
+          except SystemExit:
+              raise
+          except BaseException:
+              tb = traceback.format_exc().strip().splitlines()
+              print('::error title=Demo check crashed::' + ' | '.join(tb[-4:]))
+              sys.exit(1)
           EOF
