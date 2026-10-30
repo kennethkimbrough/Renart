@@ -1,20 +1,51 @@
 {
   "score": "max calibrated softmax probability",
-  "n_in": 6,
-  "n_out": 5,
-  "threshold": 0.5938,
-  "in_set_kept": 0.8333,
-  "in_set_mean_confidence": 0.7514,
-  "out_of_set_rejected": 0.6,
-  "auroc": 0.9333,
+  "n_in": 213,
+  "n_out": 150,
+  "threshold": 0.3151,
+  "in_set_kept": 0.9484,
+  "in_set_mean_confidence": 0.7502,
+  "out_of_set_rejected": 0.0733,
+  "auroc": 0.6711,
   "per_painter": {
+    "claude-monet": {
+      "n": 25,
+      "auroc": 0.7294,
+      "rejected_at_threshold": 0.08,
+      "mean_confidence": 0.5744
+    },
+    "el-greco": {
+      "n": 25,
+      "auroc": 0.6115,
+      "rejected_at_threshold": 0.12,
+      "mean_confidence": 0.6565
+    },
+    "francisco-goya": {
+      "n": 25,
+      "auroc": 0.7579,
+      "rejected_at_threshold": 0.04,
+      "mean_confidence": 0.54
+    },
+    "peter-paul-rubens": {
+      "n": 25,
+      "auroc": 0.6719,
+      "rejected_at_threshold": 0.08,
+      "mean_confidence": 0.6172
+    },
     "rembrandt": {
-      "n": 5,
-      "auroc": 0.9333,
-      "rejected_at_threshold": 0.6,
-      "mean_confidence": 0.5787
+      "n": 25,
+      "auroc": 0.5183,
+      "rejected_at_threshold": 0.0,
+      "mean_confidence": 0.7527
+    },
+    "vincent-van-gogh": {
+      "n": 25,
+      "auroc": 0.7378,
+      "rejected_at_threshold": 0.12,
+      "mean_confidence": 0.5534
     }
   },
   "in_split": "test",
-  "keep_rate": 0.95
+  "keep_rate": 0.95,
+  "painters_missing_from_dataset": []
 }
