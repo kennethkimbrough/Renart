@@ -66,7 +66,7 @@ function createModel() {
   model.add(tf.layers.batchNormalization());
   model.add(tf.layers.maxPooling2d({ poolSize: [2, 2] }));
 
-  // Block 4 — extra depth for richer feature extraction
+  // Block 4: extra depth for richer feature extraction
   model.add(tf.layers.conv2d({
     filters: 256,
     kernelSize: 3,
@@ -75,7 +75,7 @@ function createModel() {
     kernelInitializer: 'heNormal',
   }));
   model.add(tf.layers.batchNormalization());
-  model.add(tf.layers.globalAveragePooling2d()); // Replaces flatten — fewer params, less overfitting
+  model.add(tf.layers.globalAveragePooling2d()); // Replaces flatten: fewer params, less overfitting
 
   // Classifier head
   model.add(tf.layers.dense({ units: 512, activation: 'relu' }));
@@ -91,7 +91,7 @@ function createModel() {
 // Image Preprocessing
 // ─────────────────────────────────────────────
 async function loadAndPreprocessImage(imagePath) {
-  return tf.tidy(() => { // tf.tidy() auto-disposes intermediate tensors — prevents memory leaks
+  return tf.tidy(() => { // tf.tidy() auto-disposes intermediate tensors to prevent memory leaks
     try {
       const imageBuffer = fs.readFileSync(imagePath);
       const tfImage = tf.node.decodeImage(imageBuffer, 3); // Force 3 channels (RGB)
@@ -170,7 +170,7 @@ async function prepareDataset() {
 // Training
 // ─────────────────────────────────────────────
 async function trainModel() {
-  // Load existing model if available — skip retraining
+  // Load existing model if available and skip retraining
   if (fs.existsSync('./renaissance-art-model/model.json')) {
     console.log('Saved model found. Loading instead of retraining...');
     const model = await tf.loadLayersModel(CONFIG.MODEL_SAVE_PATH);
@@ -213,7 +213,7 @@ async function trainModel() {
       onEpochEnd: async (epoch, logs) => {
         const valAcc = logs.val_acc ?? logs.val_accuracy;
         console.log(
-          `Epoch ${epoch + 1}/${CONFIG.EPOCHS} — ` +
+          `Epoch ${epoch + 1}/${CONFIG.EPOCHS} | ` +
           `loss: ${logs.loss.toFixed(4)} | acc: ${(logs.acc ?? logs.accuracy).toFixed(4)} | ` +
           `val_loss: ${logs.val_loss.toFixed(4)} | val_acc: ${valAcc.toFixed(4)}`
         );
@@ -223,7 +223,7 @@ async function trainModel() {
           bestValAcc = valAcc;
           epochsWithoutImprovement = 0;
           await model.save(CONFIG.MODEL_SAVE_PATH);
-          console.log(`  ✓ New best val_acc: ${valAcc.toFixed(4)} — model saved.`);
+          console.log(`  ✓ New best val_acc: ${valAcc.toFixed(4)}, model saved.`);
         } else {
           epochsWithoutImprovement++;
           if (epochsWithoutImprovement >= PATIENCE) {

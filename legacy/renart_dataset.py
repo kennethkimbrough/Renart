@@ -124,7 +124,7 @@ def download_wikiart(config: dict, counts: dict, seen_hashes: dict) -> dict:
 
     print("\n━━━ Source 1: WikiArt (Hugging Face) ━━━")
     print("Loading huggan/wikiart dataset in streaming mode...")
-    print("(First run downloads ~4GB index — subsequent runs are instant)\n")
+    print("(First run downloads ~4GB index; subsequent runs are instant)\n")
 
     try:
         dataset = load_dataset("huggan/wikiart", split="train", streaming=True, trust_remote_code=True)
@@ -140,7 +140,7 @@ def download_wikiart(config: dict, counts: dict, seen_hashes: dict) -> dict:
     skipped_max = 0
 
     for item in tqdm(dataset, desc="WikiArt", unit="img"):
-        # WikiArt uses numeric artist IDs — the dataset has an 'artist' field
+        # WikiArt uses numeric artist IDs; the dataset has an 'artist' field
         # that maps to an artist name string
         raw_artist = str(item.get("artist", ""))
         artist = normalize_artist_name(raw_artist)
@@ -154,7 +154,7 @@ def download_wikiart(config: dict, counts: dict, seen_hashes: dict) -> dict:
             # Check if all artists are at max
             if all(counts.get(a, 0) >= config["max_per_artist"]
                    for a in target_set):
-                print("\nAll artists at max count — stopping WikiArt download.")
+                print("\nAll artists at max count, stopping WikiArt download.")
                 break
             continue
 
@@ -228,7 +228,7 @@ def download_nga(config: dict, counts: dict, seen_hashes: dict) -> dict:
         artist_line = attribution.split("\n")[0].strip()
         artist = normalize_artist_name(artist_line)
 
-        # Fuzzy match — check if any target artist name is contained
+        # Fuzzy match: check if any target artist name is contained
         matched = None
         for target in target_set:
             if target.lower() in artist.lower() or artist.lower() in target.lower():
@@ -275,7 +275,7 @@ def download_nga(config: dict, counts: dict, seen_hashes: dict) -> dict:
                         counts[artist] = counts.get(artist, 0) + 1
                         downloaded += 1
 
-                # Be polite to NGA servers — don't hammer them
+                # Be polite to NGA servers and don't hammer them
                 time.sleep(0.3)
 
             except Exception:
@@ -318,7 +318,7 @@ def main():
     # Filter out artists with too few images
     removed = [a for a, c in counts.items() if c < CONFIG["min_per_artist"]]
     for artist in removed:
-        print(f"Removing {artist} — only {counts[artist]} images (minimum is {CONFIG['min_per_artist']})")
+        print(f"Removing {artist}: only {counts[artist]} images (minimum is {CONFIG['min_per_artist']})")
         # Remove their folders
         for split in ["train", "val"]:
             folder = os.path.join(CONFIG[f"{split}_dir"], safe_folder_name(artist))

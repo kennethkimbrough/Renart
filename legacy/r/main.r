@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Renart - Renaissance Art Classifier
-# main.r — Complete training pipeline
+# main.r: complete training pipeline
 #
 # Datasets:
 #   - WikiArt via Hugging Face (huggan/wikiart)
@@ -47,7 +47,7 @@ CONFIG <- list(
   stats_file       = "./data/renaissance/dataset_stats.json",
   class_index_file = "./results/class_indices.json",
 
-  # Image settings — must match model.js
+  # Image settings (must match model.js)
   image_size = c(224, 224),
   channels   = 3,
 
@@ -60,7 +60,7 @@ CONFIG <- list(
   lr_factor     = 0.5,   # Multiply LR by this when reducing
   min_lr        = 1e-7,
 
-  # Target Renaissance artists — must match renart_dataset.py
+  # Target Renaissance artists (must match renart_dataset.py)
   target_artists = c(
     "Leonardo Da Vinci",
     "Michelangelo",
@@ -150,7 +150,7 @@ download_dataset <- function(config) {
 # ───────────────────────────────────────────────────────────────────────────────
 # 3. Data Generators
 #    Train: heavy augmentation to fight overfitting on a relatively small dataset
-#    Val:   no augmentation — evaluate on real unmodified images
+#    Val:   no augmentation; evaluate on real unmodified images
 # ───────────────────────────────────────────────────────────────────────────────
 create_generators <- function(config) {
 
@@ -161,11 +161,11 @@ create_generators <- function(config) {
     rotation_range     = 20,          # Rotate up to ±20 degrees
     width_shift_range  = 0.15,        # Shift horizontally up to 15%
     height_shift_range = 0.15,        # Shift vertically up to 15%
-    horizontal_flip    = TRUE,        # Mirror — valid transformation for paintings
+    horizontal_flip    = TRUE,        # Mirror: valid transformation for paintings
     brightness_range   = c(0.75, 1.25), # Vary exposure ±25%
     zoom_range         = 0.15,        # Zoom in/out up to 15%
     shear_range        = 0.1,         # Slight shear distortion
-    channel_shift_range = 20,         # Slight colour shift — handles photo variations
+    channel_shift_range = 20,         # Slight colour shift for photo variations
     fill_mode          = "reflect"    # Mirror-fill empty areas after rotation/shift
   )
 
@@ -201,7 +201,7 @@ create_generators <- function(config) {
 # ───────────────────────────────────────────────────────────────────────────────
 # 4. Model Architecture
 #    4-block CNN with BatchNormalization after every conv layer.
-#    GlobalAveragePooling instead of Flatten — fewer parameters, less overfitting.
+#    GlobalAveragePooling instead of Flatten: fewer parameters, less overfitting.
 #    Matches the architecture in model.js so R and JS models are consistent.
 # ───────────────────────────────────────────────────────────────────────────────
 build_model <- function(num_classes, config) {
@@ -408,7 +408,7 @@ evaluate_model <- function(model, generators, history, config) {
     geom_point(size = 1.5) +
     scale_y_continuous(labels = percent_format(), limits = c(0, 1)) +
     scale_colour_manual(values = c("Train" = "#2196F3", "Validation" = "#FF5722")) +
-    labs(title = "Renart — Accuracy", x = "Epoch", y = "Accuracy", colour = NULL) +
+    labs(title = "Renart: Accuracy", x = "Epoch", y = "Accuracy", colour = NULL) +
     theme_minimal(base_size = 13) +
     theme(legend.position = "bottom")
 
@@ -416,7 +416,7 @@ evaluate_model <- function(model, generators, history, config) {
     geom_line(size = 1.1) +
     geom_point(size = 1.5) +
     scale_colour_manual(values = c("Train" = "#2196F3", "Validation" = "#FF5722")) +
-    labs(title = "Renart — Loss", x = "Epoch", y = "Loss", colour = NULL) +
+    labs(title = "Renart: Loss", x = "Epoch", y = "Loss", colour = NULL) +
     theme_minimal(base_size = 13) +
     theme(legend.position = "bottom")
 
@@ -440,7 +440,7 @@ evaluate_model <- function(model, generators, history, config) {
     geom_tile(colour = "white") +
     geom_text(aes(label = Freq), size = 2.8, colour = "white") +
     scale_fill_gradient(low = "#1a237e", high = "#f44336") +
-    labs(title = "Renart — Confusion Matrix", x = "Actual Artist", y = "Predicted Artist") +
+    labs(title = "Renart: Confusion Matrix", x = "Actual Artist", y = "Predicted Artist") +
     theme_minimal(base_size = 10) +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
@@ -507,7 +507,7 @@ predict_artwork <- function(image_path, config, top_k = 3) {
   top_idx   <- order(probs[1, ], decreasing = TRUE)[1:top_k]
 
   cat("\n══════════════════════════════════════════\n")
-  cat(" Renart — Artwork Analysis\n")
+  cat(" Renart: Artwork Analysis\n")
   cat("══════════════════════════════════════════\n")
   cat(sprintf(" Image: %s\n\n", basename(image_path)))
   cat(" Top artist predictions:\n")
@@ -530,7 +530,7 @@ main <- function() {
 
   cat("\n")
   cat("╔══════════════════════════════════════════╗\n")
-  cat("║   Renart — Renaissance Art Classifier    ║\n")
+  cat("║   Renart: Renaissance Art Classifier     ║\n")
   cat("╚══════════════════════════════════════════╝\n\n")
 
   # Predict-only mode
@@ -565,11 +565,11 @@ main <- function() {
               eval_results$val_accuracy * 100))
   cat("╚══════════════════════════════════════════╝\n\n")
   cat("Outputs saved to ./results/:\n")
-  cat("  accuracy_curve.png    — training progress\n")
-  cat("  loss_curve.png        — loss over epochs\n")
-  cat("  confusion_matrix.png  — per-artist prediction breakdown\n")
-  cat("  class_indices.json    — artist label map (used by predict.js)\n")
-  cat("  training_log.csv      — raw epoch-by-epoch metrics\n\n")
+  cat("  accuracy_curve.png    training progress\n")
+  cat("  loss_curve.png        loss over epochs\n")
+  cat("  confusion_matrix.png  per-artist prediction breakdown\n")
+  cat("  class_indices.json    artist label map (used by predict.js)\n")
+  cat("  training_log.csv      raw epoch-by-epoch metrics\n\n")
   cat("To predict a new image:\n")
   cat("  Rscript main.r --predict path/to/painting.jpg\n\n")
 }
