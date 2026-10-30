@@ -350,7 +350,7 @@ footer p { max-width: 76ch; }
     let shown = 0;
     M.classes.forEach((slug, i) => {
       const img = new Image();
-      img.alt = ""; img.loading = "lazy";
+      img.alt = "";  // not lazy: the card stays hidden until an image loads, and hidden lazy images never load
       img.onload = () => { $("samples-card").hidden = false; shown++; };
       img.onerror = () => { btn.remove(); };
       img.src = "model/samples/" + slug + ".jpg";
