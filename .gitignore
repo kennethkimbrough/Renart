@@ -8,3 +8,4 @@ dist/
 data/
 *.pt
 *.pkl
+site/

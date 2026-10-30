@@ -28,6 +28,9 @@ renart = "renart.cli:main"
 [tool.setuptools.packages.find]
 include = ["renart*"]
 
+[tool.setuptools.package-data]
+renart = ["site_template.html"]
+
 [tool.ruff]
 line-length = 110
 target-version = "py310"

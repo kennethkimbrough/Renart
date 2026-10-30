@@ -6,6 +6,7 @@
     predict         top-3 artists for an image with a saved model
     gradcam         heatmaps of what the CNN looked at (needs torch)
     report          merge metrics JSON files into a Markdown table
+    site            build the static results site from committed results (see site.toml)
 """
 
 from __future__ import annotations
@@ -123,6 +124,13 @@ def cmd_report(args) -> int:
     return 0
 
 
+def cmd_site(args) -> int:
+    from .site import build_site
+    target = build_site(Path(args.config), Path(args.out))
+    print(f"wrote {target}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="renart", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -169,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
     r = sub.add_parser("report", help="print a Markdown comparison table")
     r.add_argument("metrics", nargs="+")
     r.set_defaults(func=cmd_report)
+
+    s = sub.add_parser("site", help="build the static results site from committed results")
+    s.add_argument("--config", default="site.toml", help="site configuration (default site.toml)")
+    s.add_argument("--out", default="site", help="output directory (default site/)")
+    s.set_defaults(func=cmd_site)
     return p
 
 

@@ -1,0 +1,20 @@
+# Configuration for the results site: python -m renart site
+# The site is built from committed results only; nothing here is downloaded or trained.
+
+run = "results/runs/run5-resnet18-10x200-12ep-unfreeze2"   # the run the site reports
+repeat = "results/runs/run6-repeat-of-run5"                 # an independent rerun of the same request
+previous = "results/runs/run3-resnet18-10x150-8ep"          # an earlier, smaller run, for context
+notes = "results/runs/run5-resnet18-10x200-12ep-unfreeze2/notes.md"
+
+# Schools, in the order the confusion matrix shows them.
+[[schools]]
+name = "North of the Alps"
+painters = ["hans-memling", "hieronymus-bosch", "albrecht-durer"]
+
+[[schools]]
+name = "Florence and Rome"
+painters = ["fra-angelico", "leonardo-da-vinci", "michelangelo", "raphael"]
+
+[[schools]]
+name = "Venice"
+painters = ["titian", "tintoretto", "paolo-veronese"]
