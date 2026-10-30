@@ -13,6 +13,11 @@ provenance. The earlier README described the project in those terms with
 accuracy figures that no code in the repository produced. Those claims are
 gone.
 
+**Results site: [kennethkimbrough.github.io/Renart](https://kennethkimbrough.github.io/Renart/)**,
+with every model's accuracy and its 95% interval, an interactive confusion
+matrix grouped by school, painter-by-painter results against the baseline, and
+the training curve. It is built from the committed run on every push.
+
 ## Results
 
 Run 5 of the training workflow, 2026-10-30
@@ -35,7 +40,15 @@ colour and stroke features into a logistic regression, reaches 52.6%; the
 gap between the two is the value of learned features over hand-designed ones
 for this task. An earlier run with fewer images, fewer epochs and only the
 last stage unfrozen ([run 3](results/runs/run3-resnet18-10x150-8ep/)) scored 72.0% / top-3 92.4%,
-so the extra data and capacity were worth about five points.
+so the extra data and capacity were worth about five points (the two runs
+were scored on different validation sets, 289 and 327 images, so that is a
+direction rather than a like-for-like measurement).
+
+The 95% interval on the CNN's 77.7% is 73–82% (Wilson, over 327 images);
+the baseline's is 47–58%. **Run 6 repeated run 5's request as a separate job
+on another runner and reproduced it exactly**: the same loss and accuracy at
+every epoch, the same confusion matrices for all three models and a
+byte-identical Grad-CAM image ([run 6](results/runs/run6-repeat-of-run5/)).
 
 Per painter (CNN, validation):
 
@@ -58,7 +71,10 @@ The confusions are the ones an art historian would predict: the Venetians
 (Titian, Tintoretto, Veronese) are confused with each other: 18 of the 103
 Venetian validation images land on another Venetian. Raphael is read as
 Fra Angelico four times out of 28, and Fra Angelico himself, with his flat
-gold grounds, is never missed. Images per painter in the subset:
+gold grounds, is never missed. Across all ten painters, 35 of the CNN's 73
+mistakes (48%) name a painter from the same school (north of the Alps,
+Florence and Rome, or Venice); mistakes spread at random would do that about
+26% of the time, and the logistic-regression baseline's figure is 35%. Images per painter in the subset:
 leonardo-da-vinci 164, raphael 143, titian 200, michelangelo 129, fra-angelico 167, tintoretto 187, paolo-veronese 130, albrecht-durer 200, hieronymus-bosch 182, hans-memling 151.
 
 ![Grad-CAM heatmaps](results/runs/run5-resnet18-10x200-12ep-unfreeze2/gradcam.png)
@@ -135,10 +151,12 @@ python -m renart train-cnn --data data/run --out results --epochs 8
 python -m renart gradcam --model results/cnn.pt --data data/run
 python -m renart predict --model results/cnn.pt some-painting.jpg
 python -m renart report results/metrics_*.json
+python -m renart site --out site             # the results site, from the run named in site.toml
 ```
 
 `pytest` runs in seconds with no network and no torch: the feature extractor,
-baseline, metrics and CLI are tested on synthetic "paintings".
+baseline, metrics, results site and CLI are tested on synthetic "paintings"
+and synthetic results.
 
 ## Limitations
 
@@ -162,10 +180,12 @@ baseline, metrics and CLI are tested on synthetic "paintings".
 
 ```
 renart/        the package: config, data, download, features, baseline, cnn, gradcam, metrics, cli
-tests/         pytest suite on synthetic images (no network, no torch)
+renart/site.py the results site: committed metrics -> one self-contained index.html (site_template.html)
+site.toml      which run the site shows, its repeat and earlier run, and the painters' schools
+tests/         pytest suite on synthetic images and results (no network, no torch)
 results/       latest/ = most recent Actions run; runs/ = kept runs referenced above
 legacy/        the earlier R and TensorFlow.js attempts and the first dataset script
-.github/       ci.yml (ruff + pytest) and train.yml (the training run)
+.github/       ci.yml (ruff + pytest), train.yml (the training run), pages.yml (the results site)
 ```
 
 ## License
