@@ -36,7 +36,7 @@ def synthetic_painting(style: str, seed: int, size: tuple[int, int] = SIZE) -> n
 
 @pytest.fixture
 def synthetic_dataset(tmp_path: Path) -> Path:
-    """An image folder with train/val splits for two synthetic artists."""
+    """An image folder with train/val splits (no test split) for two synthetic artists."""
     root = tmp_path / "data"
     for style in ("warm", "cool"):
         for split, n in (("train", 12), ("val", 4)):
@@ -45,4 +45,22 @@ def synthetic_dataset(tmp_path: Path) -> Path:
             offset = 0 if split == "train" else 100
             for i in range(n):
                 Image.fromarray(synthetic_painting(style, seed=offset + i)).save(d / f"img_{i:03d}.jpg")
+    return root
+
+
+@pytest.fixture
+def synthetic_dataset_with_test(synthetic_dataset: Path) -> Path:
+    """The same dataset plus a test split and an `ood/` folder with a third, grey 'painter'."""
+    root = synthetic_dataset
+    for style in ("warm", "cool"):
+        d = root / "test" / f"artist-{style}"
+        d.mkdir(parents=True)
+        for i in range(3):
+            Image.fromarray(synthetic_painting(style, seed=200 + i)).save(d / f"img_{i:03d}.jpg")
+    ood = root / "ood" / "artist-grey"
+    ood.mkdir(parents=True)
+    rng = np.random.RandomState(7)
+    for i in range(3):
+        grey = np.clip(128 + rng.normal(0, 30, (SIZE[1], SIZE[0], 3)), 0, 255).astype(np.uint8)
+        Image.fromarray(grey).save(ood / f"img_{i:03d}.jpg")
     return root

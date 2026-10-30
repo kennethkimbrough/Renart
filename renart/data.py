@@ -48,13 +48,58 @@ def load_split(split_dir: Path, classes: list[str] | None = None) -> ImageFolder
     return ImageFolder(paths=paths, labels=np.asarray(labels, dtype=np.int64), classes=classes)
 
 
-def load_dataset(root: Path) -> tuple[ImageFolder, ImageFolder]:
-    """Load train and val splits with a shared class list."""
+@dataclass
+class Splits:
+    """The dataset's splits with one shared class list.
+
+    `test` is None for a dataset laid out before the test split existed; the
+    evaluation then falls back to `val` and says so in its metrics.
+    """
+
+    train: ImageFolder
+    val: ImageFolder
+    test: ImageFolder | None = None
+
+    @property
+    def classes(self) -> list[str]:
+        return self.train.classes
+
+    @property
+    def eval(self) -> ImageFolder:
+        """The split that reported numbers come from."""
+        return self.test if self.test is not None and len(self.test) else self.val
+
+    @property
+    def eval_name(self) -> str:
+        return "test" if self.test is not None and len(self.test) else "val"
+
+
+def load_splits(root: Path) -> Splits:
     root = Path(root)
     classes = list_classes(root / "train")
     train = load_split(root / "train", classes)
     val = load_split(root / "val", classes)
-    return train, val
+    test = load_split(root / "test", classes) if (root / "test").is_dir() else None
+    return Splits(train=train, val=val, test=test)
+
+
+def load_dataset(root: Path) -> tuple[ImageFolder, ImageFolder]:
+    """Load train and val splits with a shared class list (kept for older callers)."""
+    s = load_splits(root)
+    return s.train, s.val
+
+
+def load_ood(root: Path) -> dict[str, ImageFolder]:
+    """Out-of-set painters under `<root>/ood/<painter>/`, one folder each (empty if absent)."""
+    ood_dir = Path(root) / "ood"
+    if not ood_dir.is_dir():
+        return {}
+    out = {}
+    for name in list_classes(ood_dir):
+        folder = load_split(ood_dir, [name])
+        if len(folder):
+            out[name] = folder
+    return out
 
 
 def load_image(path: Path, size: tuple[int, int] | None = None) -> np.ndarray:

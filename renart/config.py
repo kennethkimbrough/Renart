@@ -33,8 +33,44 @@ DEFAULT_ARTISTS: list[str] = [
     "el-greco",
 ]
 
+# Painters outside the ten, used only to measure whether the model notices a
+# painting is by none of them. Two Baroque painters who learned from the
+# Venetians, two Dutch Golden Age painters, and two Impressionists. Any slug
+# missing from the dataset is skipped and reported.
+OOD_ARTISTS: list[str] = [
+    "caravaggio",
+    "peter-paul-rubens",
+    "rembrandt",
+    "johannes-vermeer",
+    "claude-monet",
+    "vincent-van-gogh",
+]
+
+# WikiArt genres dropped from the training subset. Drawings and studies are
+# mostly pen or chalk on paper: a model that sees them learns "paper" for the
+# painters who left many (Leonardo, Michelangelo), not their brushwork.
+EXCLUDED_GENRES: list[str] = ["sketch_and_study"]
+
 IMAGE_SIZE: tuple[int, int] = (224, 224)
 HF_DATASET = "huggan/wikiart"
+
+SPLITS = ("train", "val", "test")
+
+
+def split_for(n: int) -> str:
+    """Deterministic split for the n-th kept image of a painter: 70% train, 15% val, 15% test.
+
+    Validation picks the training epoch and the calibration temperature; the
+    test split is scored once and reported. Spreading each split through the
+    sequence (rather than taking the last 30%) keeps the three alike when the
+    dataset shards arrive in a biased order.
+    """
+    r = n % 20
+    if r in (4, 9, 14):
+        return "val"
+    if r in (2, 12, 17):
+        return "test"
+    return "train"
 
 
 @dataclass
@@ -43,7 +79,7 @@ class DataConfig:
     artists: list[str] = field(default_factory=lambda: list(DEFAULT_ARTISTS))
     max_artists: int = 10
     images_per_artist: int = 150
-    val_fraction: float = 0.2
+    exclude_genres: list[str] = field(default_factory=lambda: list(EXCLUDED_GENRES))
     seed: int = 42
     image_size: tuple[int, int] = IMAGE_SIZE
 
@@ -54,6 +90,14 @@ class DataConfig:
     @property
     def val_dir(self) -> Path:
         return self.root / "val"
+
+    @property
+    def test_dir(self) -> Path:
+        return self.root / "test"
+
+    @property
+    def ood_dir(self) -> Path:
+        return self.root / "ood"
 
     @property
     def stats_path(self) -> Path:

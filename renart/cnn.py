@@ -83,7 +83,7 @@ def transforms(train: bool, size: int = 224):
     return T.Compose([T.Resize(size), T.CenterCrop(size), T.ToTensor(), norm])
 
 
-def predict_probs(model, folder: ImageFolder, batch_size: int = 64, workers: int = 2) -> np.ndarray:
+def predict_logits(model, folder: ImageFolder, batch_size: int = 64, workers: int = 2) -> np.ndarray:
     torch, _ = _torch()
     ds = _FolderDataset(folder, transforms(train=False))
     loader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=workers)
@@ -91,14 +91,20 @@ def predict_probs(model, folder: ImageFolder, batch_size: int = 64, workers: int
     out = []
     with torch.no_grad():
         for x, _ in loader:
-            out.append(torch.softmax(model(x), dim=1).cpu().numpy())
+            out.append(model(x).cpu().numpy())
     return np.concatenate(out) if out else np.zeros((0, 0))
+
+
+def predict_probs(model, folder: ImageFolder, batch_size: int = 64, workers: int = 2) -> np.ndarray:
+    from .metrics import softmax
+    return softmax(predict_logits(model, folder, batch_size=batch_size, workers=workers))
 
 
 def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int = 8,
               batch_size: int = 32, lr: float = 3e-4, arch: str = "resnet18",
-              pretrained: bool = True, workers: int = 2, seed: int = 0, unfreeze: int = 1) -> dict:
-    """Fine-tune, keep the best validation epoch, return history + val probs."""
+              pretrained: bool = True, workers: int = 2, seed: int = 0, unfreeze: int = 1,
+              test: ImageFolder | None = None) -> dict:
+    """Fine-tune, keep the best validation epoch, return history + val logits (+ test logits)."""
     torch, _ = _torch()
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -116,7 +122,7 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
         shuffle=True, num_workers=workers, drop_last=False)
 
     history = []
-    best_acc, best_state, best_probs = -1.0, None, None
+    best_acc, best_state, best_logits = -1.0, None, None
     for epoch in range(epochs):
         t0 = time.time()
         model.train()
@@ -131,15 +137,15 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
             correct += int((logits.argmax(1) == y).sum())
             total += len(y)
         sched.step()
-        probs = predict_probs(model, val, batch_size=max(batch_size, 64), workers=workers)
-        val_acc = float((probs.argmax(1) == val.labels).mean()) if len(val) else float("nan")
+        logits = predict_logits(model, val, batch_size=max(batch_size, 64), workers=workers)
+        val_acc = float((logits.argmax(1) == val.labels).mean()) if len(val) else float("nan")
         row = {"epoch": epoch + 1, "train_loss": loss_sum / max(total, 1),
                "train_acc": correct / max(total, 1), "val_acc": val_acc,
                "seconds": round(time.time() - t0, 1)}
         history.append(row)
         print(json.dumps(row), flush=True)
         if val_acc > best_acc:
-            best_acc, best_probs = val_acc, probs
+            best_acc, best_logits = val_acc, logits
             best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
 
     if best_state is not None:
@@ -147,8 +153,11 @@ def train_cnn(train: ImageFolder, val: ImageFolder, out_dir: Path, epochs: int =
     torch.save({"state_dict": model.state_dict(), "classes": train.classes, "arch": arch, "unfreeze": unfreeze},
                out_dir / "cnn.pt")
     (out_dir / "cnn_history.json").write_text(json.dumps(history, indent=2))
-    return {"history": history, "best_val_acc": best_acc, "val_probs": best_probs,
-            "model_path": str(out_dir / "cnn.pt")}
+    out = {"history": history, "best_val_acc": best_acc, "val_logits": best_logits,
+           "model_path": str(out_dir / "cnn.pt"), "test_logits": None}
+    if test is not None and len(test):
+        out["test_logits"] = predict_logits(model, test, batch_size=max(batch_size, 64), workers=workers)
+    return out
 
 
 def load_cnn(path: Path):
@@ -161,12 +170,55 @@ def load_cnn(path: Path):
     return model, blob["classes"]
 
 
-def predict_image(model, classes: list[str], image_path: Path, top_k: int = 3) -> list[tuple[str, float]]:
+def predict_image(model, classes: list[str], image_path: Path, top_k: int = 3,
+                  temperature: float = 1.0) -> list[tuple[str, float]]:
     torch, _ = _torch()
     from PIL import Image
+
+    from .metrics import softmax
     with Image.open(image_path) as img:
         x = transforms(train=False)(img.convert("RGB")).unsqueeze(0)
     with torch.no_grad():
-        probs = torch.softmax(model(x), dim=1)[0].numpy()
+        probs = softmax(model(x).numpy(), temperature)[0]
     order = np.argsort(-probs)[:top_k]
     return [(classes[i], float(probs[i])) for i in order]
+
+
+def export_onnx(model_path: Path, out_path: Path, opset: int = 17) -> Path:
+    """Export the saved CNN to ONNX (input: float32 NCHW, ImageNet-normalised; output: logits).
+
+    The browser demo runs this file with onnxruntime-web, so the preprocessing
+    it needs (resize short side to 224, centre crop, ImageNet mean/std) is
+    written next to it by `renart_model.json`.
+    """
+    torch, _ = _torch()
+    model, _classes = load_cnn(model_path)
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    dummy = torch.zeros(1, 3, 224, 224)
+    kwargs = {"opset_version": opset, "input_names": ["image"], "output_names": ["logits"],
+              "dynamic_axes": {"image": {0: "batch"}, "logits": {0: "batch"}}}
+    try:
+        # Newer torch defaults to the dynamo exporter; the classic one is smaller and runs everywhere.
+        torch.onnx.export(model, dummy, str(out_path), dynamo=False, **kwargs)
+    except TypeError:  # older torch has no `dynamo` argument
+        torch.onnx.export(model, dummy, str(out_path), **kwargs)
+    return out_path
+
+
+def check_onnx(model_path: Path, onnx_path: Path, image_path: Path, atol: float = 1e-3) -> float:
+    """Largest absolute difference between torch and onnxruntime logits for one image."""
+    import onnxruntime as ort
+    from PIL import Image
+    torch, _ = _torch()
+    model, _classes = load_cnn(model_path)
+    with Image.open(image_path) as img:
+        x = transforms(train=False)(img.convert("RGB")).unsqueeze(0)
+    with torch.no_grad():
+        ref = model(x).numpy()
+    sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+    got = sess.run(["logits"], {"image": x.numpy()})[0]
+    diff = float(np.abs(ref - got).max())
+    if diff > atol:
+        raise RuntimeError(f"ONNX output differs from torch by {diff:.5f} (> {atol})")
+    return diff
