@@ -116,6 +116,52 @@ def test_build_writes_one_page_with_escaped_data(project: Path, tmp_path: Path):
     assert (tmp_path / "out/gradcam.png").read_bytes() == b"\x89PNG fake"
 
 
+def test_site_reports_the_test_split_and_the_out_of_set_check(project: Path, tmp_path: Path):
+    run = project / "results/runs/a"
+    cnn = json.loads((run / "metrics_cnn_resnet18.json").read_text())
+    cnn.update({"eval_split": "test", "val_accuracy": 0.9,
+                "calibration": {"temperature": 1.3, "ece_before": 0.12, "ece": 0.04}})
+    _write(run / "metrics_cnn_resnet18.json", cnn)
+    stats = json.loads((run / "dataset_stats.json").read_text())
+    for c in stats["counts"].values():
+        c["test"] = 2
+    stats.update({"excluded_genres": ["sketch_and_study"], "excluded_counts": {"titian": 3, "raphael": 1}})
+    _write(run / "dataset_stats.json", stats)
+    _write(run / "metrics_ood.json", {"auroc": 0.91, "threshold": 0.55, "in_set_kept": 0.95, "out_of_set_rejected": 0.7,
+                                      "n_in": 10, "n_out": 20, "in_split": "test",
+                                      "per_painter": {"claude-monet": {"n": 20, "auroc": 0.91, "rejected_at_threshold": 0.7,
+                                                                       "mean_confidence": 0.4}}})
+    _write(run / "renart_model.json", {"classes": PAINTERS, "input_size": 224, "mean": [0.5] * 3, "std": [0.25] * 3,
+                                       "temperature": 1.3, "abstain_below": 0.55, "accuracy": 0.8,
+                                       "top3_accuracy": 1.0, "n_eval": 10, "eval_split": "test"})
+    (run / "ood_confidence.png").write_bytes(b"\x89PNG fake")
+    cfg = project / "site.toml"
+    cfg.write_text('model_release = "model-run7"\n' + cfg.read_text())
+
+    data = site_data(cfg)
+    assert data["run"]["eval_split"] == "test" and data["run"]["split_word"] == "test"
+    assert data["run"]["test"] == 6 and data["run"]["excluded_images"] == 4
+    assert data["ood"]["auroc"] == 0.91 and data["ood"]["painters"][0]["label"] == "Claude Monet"
+    assert data["ood"]["plot"] == "ood_confidence.png"
+    assert data["model"]["release"] == "model-run7" and data["model"]["url"] == "model/renart.onnx"
+    assert data["model"]["labels"] == ["Titian", "Hans Memling", "Raphael"]
+    assert data["calibration"]["temperature"] == 1.3
+
+    build_site(cfg, tmp_path / "out")
+    demo = (tmp_path / "out/demo.html").read_text(encoding="utf-8")
+    assert "/*__DATA__*/null" not in demo and "onnxruntime-web" in demo
+    payload = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', demo, re.DOTALL).group(1))
+    assert payload["model"]["abstain_below"] == 0.55 and payload["ood"]["n_out"] == 20
+    assert (tmp_path / "out/ood_confidence.png").exists()
+
+
+def test_site_without_a_model_has_no_demo_page(project: Path, tmp_path: Path):
+    data = site_data(project / "site.toml")
+    assert data["model"] is None and data["ood"] is None and data["run"]["split_word"] == "validation"
+    build_site(project / "site.toml", tmp_path / "out")
+    assert not (tmp_path / "out/demo.html").exists()
+
+
 def test_repeat_run_comparison_ignores_timing(project: Path):
     shutil.copytree(project / "results/runs/a", project / "results/runs/b")
     history = json.loads((project / "results/runs/b/cnn_history.json").read_text())

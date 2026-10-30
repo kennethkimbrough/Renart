@@ -210,8 +210,8 @@ footer p { max-width: 76ch; }
   <section class="card" id="gradcam-card" aria-labelledby="gradcam-h">
     <h2 id="gradcam-h">Where the network looks</h2>
     <figure>
-      <img id="gradcam" alt="Grad-CAM heatmaps over six validation paintings, one each by Dürer, Fra Angelico, Memling, Bosch, Leonardo and Michelangelo, all correctly attributed">
-      <figcaption>Grad-CAM highlights the regions that drove each prediction, red strongest. Faces and flesh carry Dürer and Michelangelo; the crowded figure groups carry Bosch and Memling. It also shows a weakness in the data: WikiArt mixes drawings and studies in with finished paintings, so part of what the model learns for Leonardo and Michelangelo is pen on paper rather than brushwork.</figcaption>
+      <img id="gradcam" alt="Grad-CAM heatmaps over six held-out paintings, each titled with the model's answer, its confidence and the true painter">
+      <figcaption id="gradcam-caption"></figcaption>
     </figure>
   </section>
 
@@ -400,8 +400,11 @@ footer p { max-width: 76ch; }
   })();
 
   // grad-cam
-  if (D.gradcam) document.getElementById("gradcam").src = D.gradcam;
-  else document.getElementById("gradcam-card").hidden = true;
+  if (D.gradcam) {
+    document.getElementById("gradcam").src = D.gradcam;
+    document.getElementById("gradcam-caption").textContent = D.gradcam_caption ||
+      ("Grad-CAM highlights the regions that drove each prediction, red strongest, for six " + SPLIT + " paintings, one per painter. Each title gives the model's answer, its confidence and the true painter.");
+  } else document.getElementById("gradcam-card").hidden = true;
 
   // checks
   const facts = [];

@@ -170,14 +170,15 @@ footer p { max-width: 76ch; }
   const SIZE = M.input_size || 224;
   const THR = M.abstain_below;
   const splitWord = M.eval_split === "test" ? "test" : "validation";
+  const oneIn = p => p <= 0 ? "never" : p >= 0.5 ? "more often than not" : "one time in " + Math.round(1 / p);
 
   $("repo-link").href = D.repo;
   $("painters-sub").textContent = "The model ranks these " + M.classes.length + " painters. Anything else is forced into one of them, so the confidence matters as much as the name.";
   $("chips").innerHTML = M.labels.map(l => '<span class="chip">' + esc(l) + "</span>").join("");
   $("honesty").innerHTML = "On " + M.n_eval + " " + splitWord + " paintings it had never seen, this model named the right painter <b>" + pct(M.accuracy, 1) + "</b> of the time" +
     (M.top3_accuracy ? " and had the right one in its top three <b>" + pct(M.top3_accuracy, 1) + "</b> of the time" : "") +
-    ". Expect it to be wrong about one time in four, and more often on a phone photo taken at an angle." +
-    (THR != null ? " It abstains when its confidence is below " + THR.toFixed(2) + ", a threshold that keeps 95% of the ten painters' " + splitWord + " paintings and turns away " + pct(D.ood ? D.ood.out_of_set_rejected : 0, 0) + " of paintings by painters outside the set." : "");
+    ". Expect it to be wrong about " + oneIn(1 - M.accuracy) + ", and more often on a phone photo taken at an angle." +
+    (THR != null && D.ood ? " It abstains when its confidence is below " + THR.toFixed(2) + ", a threshold that keeps " + pct(D.ood.in_set_kept, 0) + " of the ten painters' " + splitWord + " paintings and turns away " + pct(D.ood.out_of_set_rejected, 0) + " of paintings by painters outside the set." : "");
   $("how").innerHTML = "The network was exported to ONNX at the end of the training run and is loaded once (about 45 MB, then cached) and run with onnxruntime-web, so nothing is uploaded anywhere. " +
     "The image is resized so its short side is " + SIZE + " pixels, centre-cropped to " + SIZE + "×" + SIZE + " and normalised exactly as in training. " +
     "The network's scores are divided by a temperature of " + Number(M.temperature).toFixed(2) + " fitted on the validation split, so that a shown confidence of 80% means roughly four right answers in five" +

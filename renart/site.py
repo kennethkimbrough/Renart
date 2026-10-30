@@ -273,6 +273,7 @@ def site_data(config_path: Path) -> dict:
         "best_epoch": best,
         "calibration": cnn.get("calibration"),
         "gradcam": "gradcam.png" if (run / "gradcam.png").exists() else None,
+        "gradcam_caption": cfg.get("gradcam_caption"),
         "ood": _ood_summary(_read(run, "metrics_ood.json"), (run / "ood_confidence.png").exists()),
         "model": _demo_model(_read(run, "renart_model.json"), cfg.get("model_release")),
         "notes_html": "",

@@ -2,7 +2,9 @@ name: Results site
 
 # Builds the results site from the committed run named in site.toml and publishes it to the
 # gh-pages branch, which GitHub Pages serves at https://kennethkimbrough.github.io/Renart/
-# Nothing is trained or downloaded here: every number on the page is read from results/.
+# Nothing is trained or downloaded here except the ONNX model for the demo page, which the
+# training workflow published as a release (model_release in site.toml). Every number on the
+# page is read from results/.
 
 on:
   push:
@@ -28,6 +30,26 @@ jobs:
       - run: pip install -e .
       - name: Build the site
         run: python -m renart site --config site.toml --out site
+      - name: Fetch the released model for the demo page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(python -c 'import tomllib; print(tomllib.load(open("site.toml", "rb")).get("model_release", ""))')
+          if [ -z "$tag" ]; then echo "no model_release in site.toml; the demo page will say so"; exit 0; fi
+          mkdir -p site/model/samples
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir site/model --pattern 'renart.onnx' --pattern 'renart_model.json'
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir site/model/samples --pattern '*.jpg' || echo "no sample paintings in $tag"
+          ls -la site/model site/model/samples
+          # The page embeds the committed renart_model.json; the released one must be the same model.
+          python - <<'EOF'
+          import json, tomllib
+          cfg = tomllib.load(open("site.toml", "rb"))
+          committed = json.load(open(cfg["run"] + "/renart_model.json"))
+          released = json.load(open("site/model/renart_model.json"))
+          for k in ("classes", "temperature", "abstain_below", "accuracy"):
+              assert committed[k] == released[k], (k, committed[k], released[k])
+          print("released model matches the committed run")
+          EOF
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -55,3 +77,45 @@ jobs:
           done
           echo "::error title=Live site::$url did not answer (last HTTP $code). Enable GitHub Pages from the gh-pages branch in Settings > Pages."
           exit 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run the demo end to end in a headless browser
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+          python - <<'EOF'
+          import sys, time
+          from playwright.sync_api import sync_playwright
+          url = "https://kennethkimbrough.github.io/Renart/demo.html"
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+              errors = []
+              page.on("pageerror", lambda e: errors.append(str(e)))
+              page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+              # The page may have been published seconds ago; give the CDN a few tries.
+              for attempt in range(8):
+                  page.goto(url, wait_until="networkidle")
+                  if page.locator("#samples button").count() > 0:
+                      break
+                  time.sleep(15)
+              n = page.locator("#samples button").count()
+              print(f"{n} sample paintings offered")
+              if n == 0:
+                  print("no samples: the demo page has no released model to run, skipping the inference check")
+                  browser.close(); sys.exit(0)
+              page.locator("#samples button").first.click()
+              page.wait_for_selector("#result:not([hidden])", timeout=240_000)  # model download + first run
+              verdict = page.locator("#verdict").inner_text()
+              reveal = page.locator("#reveal").inner_text()
+              print("verdict:", verdict.replace("\n", " | "))
+              print("reveal:", reveal)
+              status = page.locator("#status-text").inner_text()
+              assert "Could not run" not in status, status
+              assert reveal.startswith("It is by"), "the sample's true painter was not revealed"
+              if errors:
+                  print("console errors:", *errors, sep="\n  ")
+              browser.close()
+          print("::notice title=Demo::The browser demo loaded the ONNX model and attributed a test painting end to end")
+          EOF

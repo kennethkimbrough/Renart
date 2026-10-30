@@ -5,6 +5,7 @@ run = "results/runs/run5-resnet18-10x200-12ep-unfreeze2"   # the run the site re
 repeat = "results/runs/run6-repeat-of-run5"                 # an independent rerun of the same request
 previous = "results/runs/run3-resnet18-10x150-8ep"          # an earlier, smaller run, for context
 notes = "results/runs/run5-resnet18-10x200-12ep-unfreeze2/notes.md"
+gradcam_caption = "Grad-CAM highlights the regions that drove each prediction, red strongest. Faces and flesh carry Dürer and Michelangelo; the crowded figure groups carry Bosch and Memling. It also shows a weakness in the data: WikiArt mixes drawings and studies in with finished paintings, so part of what the model learns for Leonardo and Michelangelo is pen on paper rather than brushwork."
 
 # Schools, in the order the confusion matrix shows them.
 [[schools]]
