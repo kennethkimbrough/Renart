@@ -186,5 +186,5 @@
   "val_accuracy": 0.48148148148148145,
   "feature_dim": 102,
   "n_train": 1000,
-  "feature_seconds": 46.9
+  "feature_seconds": 44.7
 }

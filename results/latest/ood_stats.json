@@ -19,6 +19,6 @@
   "source": "huggan/wikiart@main",
   "per_artist_cap": 25,
   "rows_scanned": 6787,
-  "seconds": 38.0,
+  "seconds": 29.1,
   "missing_from_dataset": []
 }
