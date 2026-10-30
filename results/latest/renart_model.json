@@ -1,0 +1,36 @@
+{
+  "classes": [
+    "leonardo-da-vinci",
+    "raphael"
+  ],
+  "labels": [
+    "Leonardo Da Vinci",
+    "Raphael"
+  ],
+  "arch": "resnet18",
+  "input_size": 224,
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "temperature": 1.4098,
+  "abstain_below": 0.5938,
+  "eval_split": "test",
+  "accuracy": 0.6666666666666666,
+  "top3_accuracy": null,
+  "n_eval": 6,
+  "ood": {
+    "auroc": 0.9333,
+    "out_of_set_rejected": 0.6,
+    "in_set_kept": 0.8333,
+    "painters": [
+      "rembrandt"
+    ]
+  }
+}

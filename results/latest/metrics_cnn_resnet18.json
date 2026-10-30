@@ -1,275 +1,91 @@
 {
   "model": "cnn-resnet18",
-  "n_eval": 327,
-  "n_classes": 10,
-  "accuracy": 0.7767584097859327,
-  "macro_f1": 0.7744265024291466,
-  "chance_accuracy": 0.1,
+  "n_eval": 6,
+  "n_classes": 2,
+  "accuracy": 0.6666666666666666,
+  "macro_f1": 0.625,
+  "chance_accuracy": 0.5,
   "per_class": {
-    "albrecht-durer": {
-      "support": 40,
-      "accuracy": 0.875
-    },
-    "fra-angelico": {
-      "support": 33,
-      "accuracy": 1.0
-    },
-    "hans-memling": {
-      "support": 30,
-      "accuracy": 0.7
-    },
-    "hieronymus-bosch": {
-      "support": 36,
-      "accuracy": 0.8611111111111112
-    },
     "leonardo-da-vinci": {
-      "support": 32,
-      "accuracy": 0.75
-    },
-    "michelangelo": {
-      "support": 25,
-      "accuracy": 0.72
-    },
-    "paolo-veronese": {
-      "support": 26,
-      "accuracy": 0.7307692307692307
+      "support": 3,
+      "accuracy": 0.3333333333333333
     },
     "raphael": {
-      "support": 28,
-      "accuracy": 0.7142857142857143
-    },
-    "tintoretto": {
-      "support": 37,
-      "accuracy": 0.6486486486486487
-    },
-    "titian": {
-      "support": 40,
-      "accuracy": 0.725
+      "support": 3,
+      "accuracy": 1.0
     }
   },
   "confusion_matrix": [
     [
-      35,
-      0,
       1,
-      1,
-      3,
-      0,
-      0,
-      0,
-      0,
-      0
+      2
     ],
     [
       0,
-      33,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    [
-      1,
-      4,
-      21,
-      2,
-      0,
-      0,
-      0,
-      2,
-      0,
-      0
-    ],
-    [
-      1,
-      1,
-      1,
-      31,
-      1,
-      0,
-      0,
-      0,
-      0,
-      1
-    ],
-    [
-      1,
-      0,
-      0,
-      3,
-      24,
-      0,
-      0,
-      2,
-      1,
-      1
-    ],
-    [
-      2,
-      0,
-      0,
-      1,
-      3,
-      18,
-      0,
-      0,
-      1,
-      0
-    ],
-    [
-      1,
-      1,
-      0,
-      0,
-      0,
-      0,
-      19,
-      1,
-      1,
       3
-    ],
-    [
-      0,
-      4,
-      2,
-      0,
-      1,
-      0,
-      0,
-      20,
-      1,
-      0
-    ],
-    [
-      2,
-      2,
-      0,
-      0,
-      0,
-      0,
-      4,
-      1,
-      24,
-      4
-    ],
-    [
-      1,
-      1,
-      1,
-      1,
-      0,
-      0,
-      2,
-      1,
-      4,
-      29
     ]
   ],
   "classes": [
-    "albrecht-durer",
-    "fra-angelico",
-    "hans-memling",
-    "hieronymus-bosch",
     "leonardo-da-vinci",
-    "michelangelo",
-    "paolo-veronese",
-    "raphael",
-    "tintoretto",
-    "titian"
+    "raphael"
   ],
-  "top3_accuracy": 0.9602446483180428,
-  "epochs": 12,
+  "eval_split": "test",
+  "val_accuracy": 0.6666666666666666,
+  "calibration": {
+    "temperature": 1.4098,
+    "ece_before": 0.3341,
+    "ece": 0.362,
+    "bins": [
+      {
+        "lo": 0.5333,
+        "hi": 0.6,
+        "n": 1,
+        "accuracy": 0.0,
+        "confidence": 0.5724
+      },
+      {
+        "lo": 0.6,
+        "hi": 0.6667,
+        "n": 1,
+        "accuracy": 1.0,
+        "confidence": 0.6582
+      },
+      {
+        "lo": 0.7333,
+        "hi": 0.8,
+        "n": 1,
+        "accuracy": 0.0,
+        "confidence": 0.7681
+      },
+      {
+        "lo": 0.8,
+        "hi": 0.8667,
+        "n": 2,
+        "accuracy": 1.0,
+        "confidence": 0.8211
+      },
+      {
+        "lo": 0.8667,
+        "hi": 0.9333,
+        "n": 1,
+        "accuracy": 1.0,
+        "confidence": 0.8678
+      }
+    ],
+    "mean_confidence": 0.7514,
+    "accuracy": 0.6667
+  },
+  "epochs": 1,
   "unfreeze_stages": 2,
-  "n_train": 1326,
+  "n_train": 28,
   "history": [
     {
       "epoch": 1,
-      "train_loss": 1.5174969245945167,
-      "train_acc": 0.5256410256410257,
-      "val_acc": 0.6391437308868502,
-      "seconds": 40.2
-    },
-    {
-      "epoch": 2,
-      "train_loss": 0.9094085535132868,
-      "train_acc": 0.7639517345399698,
-      "val_acc": 0.6880733944954128,
-      "seconds": 40.4
-    },
-    {
-      "epoch": 3,
-      "train_loss": 0.6913123878778196,
-      "train_acc": 0.8725490196078431,
-      "val_acc": 0.7186544342507645,
-      "seconds": 40.6
-    },
-    {
-      "epoch": 4,
-      "train_loss": 0.582732414767753,
-      "train_acc": 0.9095022624434389,
-      "val_acc": 0.7339449541284404,
-      "seconds": 39.1
-    },
-    {
-      "epoch": 5,
-      "train_loss": 0.48721218954204254,
-      "train_acc": 0.9381598793363499,
-      "val_acc": 0.7155963302752294,
-      "seconds": 40.5
-    },
-    {
-      "epoch": 6,
-      "train_loss": 0.43471215699053456,
-      "train_acc": 0.969079939668175,
-      "val_acc": 0.7308868501529052,
-      "seconds": 40.6
-    },
-    {
-      "epoch": 7,
-      "train_loss": 0.391112008245822,
-      "train_acc": 0.9864253393665159,
-      "val_acc": 0.7767584097859327,
-      "seconds": 40.5
-    },
-    {
-      "epoch": 8,
-      "train_loss": 0.37796918811841246,
-      "train_acc": 0.9886877828054299,
-      "val_acc": 0.7706422018348624,
-      "seconds": 43.1
-    },
-    {
-      "epoch": 9,
-      "train_loss": 0.3596103048432467,
-      "train_acc": 0.9932126696832579,
-      "val_acc": 0.7706422018348624,
-      "seconds": 41.5
-    },
-    {
-      "epoch": 10,
-      "train_loss": 0.3554202861645642,
-      "train_acc": 0.9984917043740573,
-      "val_acc": 0.7737003058103975,
-      "seconds": 41.9
-    },
-    {
-      "epoch": 11,
-      "train_loss": 0.3485657004569271,
-      "train_acc": 0.9969834087481146,
-      "val_acc": 0.7675840978593272,
-      "seconds": 42.3
-    },
-    {
-      "epoch": 12,
-      "train_loss": 0.3528270602765666,
-      "train_acc": 0.995475113122172,
-      "val_acc": 0.7675840978593272,
-      "seconds": 41.9
+      "train_loss": 0.908983051776886,
+      "train_acc": 0.39285714285714285,
+      "val_acc": 0.6666666666666666,
+      "seconds": 1.1
     }
   ],
-  "train_seconds": 492.6
+  "train_seconds": 1.1
 }

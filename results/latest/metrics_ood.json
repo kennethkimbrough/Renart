@@ -1,0 +1,20 @@
+{
+  "score": "max calibrated softmax probability",
+  "n_in": 6,
+  "n_out": 5,
+  "threshold": 0.5938,
+  "in_set_kept": 0.8333,
+  "in_set_mean_confidence": 0.7514,
+  "out_of_set_rejected": 0.6,
+  "auroc": 0.9333,
+  "per_painter": {
+    "rembrandt": {
+      "n": 5,
+      "auroc": 0.9333,
+      "rejected_at_threshold": 0.6,
+      "mean_confidence": 0.5787
+    }
+  },
+  "in_split": "test",
+  "keep_rate": 0.95
+}
