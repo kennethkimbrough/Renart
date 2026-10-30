@@ -13,51 +13,82 @@
   ],
   "counts": {
     "leonardo-da-vinci": {
-      "train": 132,
-      "val": 32
+      "train": 30,
+      "val": 6,
+      "test": 6
     },
     "raphael": {
-      "train": 115,
-      "val": 28
+      "train": 87,
+      "val": 19,
+      "test": 19
     },
     "titian": {
-      "train": 160,
-      "val": 40
+      "train": 138,
+      "val": 30,
+      "test": 29
     },
     "michelangelo": {
-      "train": 104,
-      "val": 25
+      "train": 55,
+      "val": 12,
+      "test": 12
     },
     "fra-angelico": {
-      "train": 134,
-      "val": 33
+      "train": 116,
+      "val": 25,
+      "test": 25
     },
     "tintoretto": {
-      "train": 150,
-      "val": 37
+      "train": 129,
+      "val": 28,
+      "test": 28
     },
     "paolo-veronese": {
-      "train": 104,
-      "val": 26
+      "train": 90,
+      "val": 19,
+      "test": 19
     },
     "albrecht-durer": {
-      "train": 160,
-      "val": 40
+      "train": 140,
+      "val": 30,
+      "test": 30
     },
     "hieronymus-bosch": {
-      "train": 146,
-      "val": 36
+      "train": 109,
+      "val": 24,
+      "test": 23
     },
     "hans-memling": {
-      "train": 121,
-      "val": 30
+      "train": 106,
+      "val": 23,
+      "test": 22
     }
   },
-  "total_images": 1653,
+  "total_images": 1429,
   "source": "huggan/wikiart@main",
   "images_per_artist_cap": 200,
+  "split": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15,
+    "rule": "renart.config.split_for"
+  },
+  "excluded_genres": [
+    "sketch_and_study"
+  ],
+  "excluded_counts": {
+    "leonardo-da-vinci": 122,
+    "raphael": 18,
+    "titian": 7,
+    "michelangelo": 50,
+    "fra-angelico": 1,
+    "tintoretto": 2,
+    "paolo-veronese": 2,
+    "albrecht-durer": 63,
+    "hieronymus-bosch": 26,
+    "hans-memling": 0
+  },
   "rows_scanned": 81444,
-  "seconds": 718.3,
+  "seconds": 276.9,
   "image_size": [
     224,
     224

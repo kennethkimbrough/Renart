@@ -1,7 +1,9 @@
 name: Train
 
-# Downloads a WikiArt subset, trains the classical baseline and the ResNet-18
-# fine-tune on CPU, and uploads metrics + confusion matrices.
+# Downloads a WikiArt subset (train/val/test plus a few out-of-set painters),
+# trains the classical baseline and the ResNet-18 fine-tune on CPU, scores both
+# on the test split, measures out-of-set detection, exports the CNN to ONNX and
+# publishes it as a release for the browser demo, and commits the metrics.
 #
 # Two ways to start it:
 #   * "Run workflow" in the Actions tab (workflow_dispatch) once this file is
@@ -35,6 +37,9 @@ on:
       unfreeze:
         description: "ResNet stages to fine-tune, counting from the end"
         default: "1"
+      ood_per_artist:
+        description: "Images per out-of-set painter (0 skips the out-of-set check)"
+        default: "25"
 
 permissions:
   contents: write
@@ -51,6 +56,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             SMOKE="${{ inputs.smoke }}"; PER="${{ inputs.per_artist }}"; MAXA="${{ inputs.max_artists }}"
             EPOCHS="${{ inputs.epochs }}"; ARCH="${{ inputs.arch }}"; UNFREEZE="${{ inputs.unfreeze }}"
+            OOD="${{ inputs.ood_per_artist }}"
           else
             SMOKE=$(jq -r '.smoke // false' .github/train-request.json)
             PER=$(jq -r '.per_artist // 150' .github/train-request.json)
@@ -58,9 +64,10 @@ jobs:
             EPOCHS=$(jq -r '.epochs // 8' .github/train-request.json)
             ARCH=$(jq -r '.arch // "resnet18"' .github/train-request.json)
             UNFREEZE=$(jq -r '.unfreeze // 1' .github/train-request.json)
+            OOD=$(jq -r '.ood_per_artist // 25' .github/train-request.json)
           fi
-          if [ "$SMOKE" = "true" ]; then EPOCHS=1; fi
-          for v in SMOKE PER MAXA EPOCHS ARCH UNFREEZE; do
+          if [ "$SMOKE" = "true" ]; then EPOCHS=1; OOD=5; fi
+          for v in SMOKE PER MAXA EPOCHS ARCH UNFREEZE OOD; do
             echo "${v,,}=${!v}" >> "$GITHUB_OUTPUT"; echo "$v=${!v}"
           done
       - uses: actions/setup-python@v5
@@ -83,6 +90,17 @@ jobs:
               --per-artist "${{ steps.cfg.outputs.per }}" --max-artists "${{ steps.cfg.outputs.maxa }}"
           fi
           cat data/run/dataset_stats.json
+      - name: Download out-of-set painters
+        if: steps.cfg.outputs.ood != '0'
+        env:
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
+        run: |
+          if [ "${{ steps.cfg.outputs.smoke }}" = "true" ]; then
+            python -m renart download-ood --smoke --data data/run --per-artist "${{ steps.cfg.outputs.ood }}" \
+              --artists caravaggio rembrandt
+          else
+            python -m renart download-ood --data data/run --per-artist "${{ steps.cfg.outputs.ood }}"
+          fi
       - name: Train classical baseline
         run: |
           python -m renart train-baseline --data data/run --out results --classifier logreg
@@ -92,11 +110,25 @@ jobs:
           python -m renart train-cnn --data data/run --out results \
             --epochs "${{ steps.cfg.outputs.epochs }}" --arch "${{ steps.cfg.outputs.arch }}" \
             --unfreeze "${{ steps.cfg.outputs.unfreeze }}" --workers 2
+      - name: Out-of-set check
+        if: steps.cfg.outputs.ood != '0'
+        run: python -m renart ood --model results/cnn.pt --data data/run --out results --workers 2
+      - name: Export to ONNX and check it against torch
+        run: |
+          pip install onnx onnxruntime
+          python -m renart export --model results/cnn.pt --out results/renart.onnx \
+            --check "$(find data/run/test -name '*.jpg' | sort | head -1)"
       - name: Grad-CAM
         run: python -m renart gradcam --model results/cnn.pt --data data/run --out results/gradcam.png --n 6
       - name: Report
         run: |
           cp data/run/dataset_stats.json results/
+          if [ -f data/run/ood/ood_stats.json ]; then cp data/run/ood/ood_stats.json results/; fi
+          # One test painting per painter, for the demo page: never seen in training or selection.
+          mkdir -p results/samples
+          for d in data/run/test/*/; do
+            cp "$(find "$d" -name '*.jpg' | sort | head -1)" "results/samples/$(basename "$d").jpg"
+          done
           python -m renart report results/metrics_*.json | tee results/comparison.md
           {
             echo "## Results (smoke=${{ steps.cfg.outputs.smoke }})"
@@ -127,3 +159,14 @@ jobs:
           name: model-${{ github.run_number }}
           path: results/cnn.pt
           retention-days: 14
+      - name: Publish the model as a release (for the browser demo)
+        if: steps.cfg.outputs.smoke != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="model-run${{ github.run_number }}"
+          acc=$(jq -r '.accuracy' results/renart_model.json)
+          gh release create "$tag" results/renart.onnx results/renart_model.json results/samples/*.jpg \
+            --target "$GITHUB_SHA" --title "Model from training run ${{ github.run_number }}" \
+            --notes "ResNet-18 exported to ONNX from training run ${{ github.run_number }} (test accuracy $acc). renart_model.json carries the class list, preprocessing, calibration temperature and abstention threshold the browser demo uses; the JPEGs are one test-split painting per painter for the demo's samples. Set model_release = \"$tag\" in site.toml to serve it."
+          echo "::notice title=Model release::$tag"

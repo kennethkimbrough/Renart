@@ -1,0 +1,24 @@
+{
+  "artists": [
+    "claude-monet",
+    "el-greco",
+    "francisco-goya",
+    "peter-paul-rubens",
+    "rembrandt",
+    "vincent-van-gogh"
+  ],
+  "counts": {
+    "francisco-goya": 25,
+    "el-greco": 25,
+    "peter-paul-rubens": 25,
+    "vincent-van-gogh": 25,
+    "claude-monet": 25,
+    "rembrandt": 25
+  },
+  "total_images": 150,
+  "source": "huggan/wikiart@main",
+  "per_artist_cap": 25,
+  "rows_scanned": 6787,
+  "seconds": 38.0,
+  "missing_from_dataset": []
+}

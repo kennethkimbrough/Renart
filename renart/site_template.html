@@ -162,8 +162,10 @@ footer p { max-width: 76ch; }
   <p class="lead">Renart ranks which of ten painters most likely made a painting, from its style alone. A fine-tuned network is compared with a classical baseline on the same held-out images, and every number below comes from a committed, reproducible training run. It is not an authentication tool: style cannot tell a master from a good copy.</p>
   <div class="stats" id="stats"></div>
   <div class="links">
+    <a id="demo-link" href="demo.html" hidden>Try it on a painting →</a>
     <a id="repo-link" href="#">Code and data on GitHub</a>
     <a href="#confusion">Where it goes wrong</a>
+    <a href="#ood" id="ood-link" hidden>Paintings by none of them</a>
     <a href="#repeat">How it was checked</a>
   </div>
 </header>
@@ -208,9 +210,22 @@ footer p { max-width: 76ch; }
   <section class="card" id="gradcam-card" aria-labelledby="gradcam-h">
     <h2 id="gradcam-h">Where the network looks</h2>
     <figure>
-      <img id="gradcam" alt="Grad-CAM heatmaps over six validation paintings, one each by Dürer, Fra Angelico, Memling, Bosch, Leonardo and Michelangelo, all correctly attributed">
-      <figcaption>Grad-CAM highlights the regions that drove each prediction, red strongest. Faces and flesh carry Dürer and Michelangelo; the crowded figure groups carry Bosch and Memling. It also shows a weakness in the data: WikiArt mixes drawings and studies in with finished paintings, so part of what the model learns for Leonardo and Michelangelo is pen on paper rather than brushwork.</figcaption>
+      <img id="gradcam" alt="Grad-CAM heatmaps over six held-out paintings, each titled with the model's answer, its confidence and the true painter">
+      <figcaption id="gradcam-caption"></figcaption>
     </figure>
+  </section>
+
+  <section class="card" id="ood" aria-labelledby="ood-h" hidden>
+    <h2 id="ood-h">Does it know when a painting is by none of them?</h2>
+    <p class="sub" id="ood-sub"></p>
+    <div class="rows" id="ood-rows"></div>
+    <div class="axisrow"><span></span><div class="axis"><span>0%</span><span>50%</span><span>100%</span></div><span></span></div>
+    <div class="legend"><span><span class="key gold"></span>share of that painter's paintings turned away</span></div>
+    <figure id="ood-figure" style="margin-top:18px" hidden>
+      <img id="ood-img" alt="Histogram of the model's confidence on the ten painters' test paintings against paintings by painters outside the set, with the abstention threshold marked">
+      <figcaption>The model's confidence (its highest calibrated probability) for the ten painters' test paintings, against paintings by painters it never saw. Where the two overlap, confidence alone cannot tell them apart.</figcaption>
+    </figure>
+    <p class="callout" id="ood-callout" style="margin-top:18px"></p>
   </section>
 
   <section class="card" id="repeat" aria-labelledby="repeat-h">
@@ -235,6 +250,9 @@ footer p { max-width: 76ch; }
   const iv = e => pct(e.lo) + "–" + pct(e.hi);
   const cnn = D.models[0], base = D.models.find(m => m.key === "baseline_logreg") || D.models[1];
   const chance = cnn.chance || 1 / D.painters.length;
+  const SPLIT = D.run.split_word || "validation";   // "test" once the run has a held-out test split
+  const heldOut = SPLIT === "test";
+  if (D.model) document.getElementById("demo-link").hidden = false;
 
   // header
   document.getElementById("repo-link").href = D.repo;
@@ -256,7 +274,7 @@ footer p { max-width: 76ch; }
   function renderModels() {
     const n = cnn.accuracy.n;
     document.getElementById("models-sub").textContent =
-      "All three models were scored on the same " + n + " validation paintings, held out from training. " +
+      "All three models were scored on the same " + n + " " + SPLIT + " paintings, held out from training" + (heldOut ? " and from every choice made while training" : "") + ". " +
       (metric === "accuracy" ? "Right first guess: the painter the model ranks first is the true one." :
         "Top 3: the true painter is among the model's three highest-ranked answers.") +
       " Bands are 95% Wilson intervals over the " + n + " paintings.";
@@ -328,7 +346,7 @@ footer p { max-width: 76ch; }
     if (selected == null) { el.innerHTML = ""; return; }
     const row = cmModel.matrix[selected], total = row.reduce((a, b) => a + b, 0);
     const parts = row.map((c, j) => [c, j]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]);
-    el.innerHTML = "<b>" + esc(P[selected].label) + "</b>: " + total + " validation paintings, as " + esc(cmModel.label) + " attributed them" +
+    el.innerHTML = "<b>" + esc(P[selected].label) + "</b>: " + total + " " + SPLIT + " paintings, as " + esc(cmModel.label) + " attributed them" +
       '<div class="went-bars">' + parts.map(([c, j]) => '<span>' + esc(P[j].label) + '</span><div class="bar" style="width:' + (c / total * 100) + "%;background:rgba(var(" + (j === selected ? "--right" : "--wrong") + '),0.85)"></div><span class="n">' + c + "</span>").join("") + "</div>";
   }
   renderCM();
@@ -336,7 +354,7 @@ footer p { max-width: 76ch; }
 
   // painters
   document.getElementById("painters-sub").textContent =
-    "Share of each painter's validation paintings that the model attributed correctly. With 25 to 40 paintings per painter the intervals are wide: one painting moves a painter's figure by 3 to 4 points.";
+    "Share of each painter's " + SPLIT + " paintings that the model attributed correctly. With a few dozen paintings per painter the intervals are wide: one painting moves a painter's figure by several points.";
   const order = P.map((p, i) => i).sort((a, b) => cnn.painters[b].v - cnn.painters[a].v);
   document.getElementById("painter-rows").innerHTML = order.map(i => {
     const e = cnn.painters[i], b = base ? base.painters[i] : null;
@@ -355,7 +373,8 @@ footer p { max-width: 76ch; }
       D.run.epochs + " epochs on " + D.run.train.toLocaleString() + " training paintings, on the CPU of a GitHub Actions runner (" +
       Math.round(D.run.train_seconds / 60) + " minutes). Training accuracy climbs towards 100% while validation accuracy levels off around " +
       pct(best.val_acc) + ": the network fits its training paintings far better than new ones, a gap that more images per painter usually narrows. " +
-      "The reported model is epoch " + best.epoch + ", the best on validation; because it is chosen on the same paintings it is scored on, its figure is slightly optimistic.";
+      (heldOut ? "The reported model is epoch " + best.epoch + ", the best on validation (" + pct(D.run.val_accuracy || best.val_acc, 1) + " there); it was then scored once on the separate test split, which no training or selection step ever saw." :
+        "The reported model is epoch " + best.epoch + ", the best on validation; because it is chosen on the same paintings it is scored on, its figure is slightly optimistic.");
     function draw() {
       const W = Math.max(300, el.clientWidth), Ht = 230, pad = {l: 40, r: 14, t: 14, b: 30};
       const n = H.length;
@@ -381,8 +400,11 @@ footer p { max-width: 76ch; }
   })();
 
   // grad-cam
-  if (D.gradcam) document.getElementById("gradcam").src = D.gradcam;
-  else document.getElementById("gradcam-card").hidden = true;
+  if (D.gradcam) {
+    document.getElementById("gradcam").src = D.gradcam;
+    document.getElementById("gradcam-caption").textContent = D.gradcam_caption ||
+      ("Grad-CAM highlights the regions that drove each prediction, red strongest, for six " + SPLIT + " paintings, one per painter. Each title gives the model's answer, its confidence and the true painter.");
+  } else document.getElementById("gradcam-card").hidden = true;
 
   // checks
   const facts = [];
@@ -397,18 +419,39 @@ footer p { max-width: 76ch; }
   }
   if (D.previous) {
     const p = D.previous;
-    facts.push('<div class="fact"><h3>What more data and training bought</h3><p>An earlier run (<code>' + esc(p.name) + "</code>) used " + p.images.toLocaleString() + " images, " + p.epochs + " epochs and " + p.unfreeze + " retrained stage" + (p.unfreeze === 1 ? "" : "s") +
+    facts.push('<div class="fact"><h3>Against the earlier run</h3><p>An earlier run (<code>' + esc(p.name) + "</code>) used " + p.images.toLocaleString() + " images, " + p.epochs + " epochs and " + p.unfreeze + " retrained stage" + (p.unfreeze === 1 ? "" : "s") +
       ", and reached <b>" + pct(p.accuracy.v, 1) + "</b> (" + iv(p.accuracy) + ") with the painter in the top 3 " + pct(p.top3, 1) + " of the time.</p><p>This run used " + D.run.images.toLocaleString() + " images, " + D.run.epochs + " epochs and " + D.run.unfreeze +
-      " retrained stages, and reached <b>" + pct(cnn.accuracy.v, 1) + "</b> (" + iv(cnn.accuracy) + "). The two were scored on different validation sets (" + p.accuracy.n + " and " + cnn.accuracy.n + " paintings), so this is a direction, not a like-for-like measurement.</p></div>");
+      " retrained stages, and reached <b>" + pct(cnn.accuracy.v, 1) + "</b> (" + iv(cnn.accuracy) + "). The two were scored on different validation sets (" + p.accuracy.n + " and " + cnn.accuracy.n + " paintings" + (heldOut ? ", and the earlier run picked its epoch on the same paintings it reported" : "") + "), so this is a direction, not a like-for-like measurement.</p></div>");
   }
   if (facts.length) document.getElementById("repeat-body").innerHTML = facts.join("");
   else document.getElementById("repeat").hidden = true;
+
+  // out-of-set check
+  if (D.ood && D.ood.painters.length) {
+    const O = D.ood;
+    document.getElementById("ood").hidden = false;
+    document.getElementById("ood-link").hidden = false;
+    document.getElementById("ood-sub").textContent =
+      "A classifier over ten painters must answer one of the ten, even for a Monet. So " + O.n_out + " paintings by " + O.painters.length +
+      " painters outside the set were shown to it, and its confidence compared with its confidence on the ten painters' " + O.n_in + " " + (O.in_split === "test" ? "test" : "validation") +
+      " paintings. A threshold set to keep " + pct(O.in_set_kept, 0) + " of the ten painters' paintings turns away the share below of each outsider's.";
+    document.getElementById("ood-rows").innerHTML = O.painters.map(p => {
+      const e = {v: p.rejected_at_threshold, lo: p.rejected_at_threshold, hi: p.rejected_at_threshold};
+      return '<div class="name"><b>' + esc(p.label) + "</b><span>" + p.n + " paintings · AUROC " + (p.auroc == null ? "–" : p.auroc.toFixed(2)) + "</span></div>" +
+        scale([[e, false]]) + '<div class="val">' + pct(p.rejected_at_threshold, 0) + "<small>turned away</small></div>";
+    }).join("");
+    document.querySelectorAll("#ood-rows .chance").forEach(c => c.remove());
+    if (O.plot) { document.getElementById("ood-figure").hidden = false; document.getElementById("ood-img").src = O.plot; }
+    document.getElementById("ood-callout").innerHTML = "Over all outsiders together the confidence score separates them from the ten with an <b>AUROC of " + (O.auroc == null ? "–" : O.auroc.toFixed(2)) +
+      "</b> (0.5 would be a coin toss, 1.0 perfect): at the threshold of " + O.threshold.toFixed(2) + " it keeps " + pct(O.in_set_kept, 0) + " of the ten painters' paintings and turns away " + pct(O.out_of_set_rejected, 0) +
+      " of the outsiders'. The demo abstains below that threshold. AUROC is the chance that a random in-set painting scores higher than a random outsider.";
+  }
 
   // notes and footer
   document.getElementById("notes-body").innerHTML = D.notes_html;
   if (!D.notes_html) document.querySelector(".notes").hidden = true;
   document.getElementById("footer-text").innerHTML = "Generated from <a href=\"" + D.repo + "/tree/main/" + esc(D.run.path) + "\"><code>" + esc(D.run.path) + "</code></a>: " +
-    D.run.images.toLocaleString() + " paintings by " + K + " painters from the <code>" + esc(D.run.source || "WikiArt") + "</code> dataset, " + D.run.train.toLocaleString() + " for training and " + D.run.val + " held out for validation, every fifth painting by each painter. " +
+    D.run.images.toLocaleString() + " paintings by " + K + " painters from the <code>" + esc(D.run.source || "WikiArt") + "</code> dataset, " + D.run.train.toLocaleString() + " for training, " + D.run.val + " for validation" + (D.run.test ? " and " + D.run.test + " for the test split, each painter split 70/15/15 by position in the sequence" : ", every fifth painting by each painter") + (D.run.excluded_images ? "; " + D.run.excluded_images.toLocaleString() + " drawings and studies (WikiArt genre " + D.run.excluded_genres.map(g => "<code>" + esc(g) + "</code>").join(", ") + ") were left out" : "") + ". " +
     "<a href=\"" + D.repo + "\">Code, pipeline and raw results</a>.";
 })();
 </script>

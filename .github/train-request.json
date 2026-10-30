@@ -5,5 +5,7 @@
   "epochs": 12,
   "arch": "resnet18",
   "unfreeze": 2,
-  "run": 5
+  "ood_per_artist": 25,
+  "run": 7,
+  "note": "same request as run 5, scored on a held-out test split with drawings filtered out, plus the out-of-set check and ONNX export"
 }
