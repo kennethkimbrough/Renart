@@ -419,7 +419,7 @@ footer p { max-width: 76ch; }
   }
   if (D.previous) {
     const p = D.previous;
-    facts.push('<div class="fact"><h3>What more data and training bought</h3><p>An earlier run (<code>' + esc(p.name) + "</code>) used " + p.images.toLocaleString() + " images, " + p.epochs + " epochs and " + p.unfreeze + " retrained stage" + (p.unfreeze === 1 ? "" : "s") +
+    facts.push('<div class="fact"><h3>Against the earlier run</h3><p>An earlier run (<code>' + esc(p.name) + "</code>) used " + p.images.toLocaleString() + " images, " + p.epochs + " epochs and " + p.unfreeze + " retrained stage" + (p.unfreeze === 1 ? "" : "s") +
       ", and reached <b>" + pct(p.accuracy.v, 1) + "</b> (" + iv(p.accuracy) + ") with the painter in the top 3 " + pct(p.top3, 1) + " of the time.</p><p>This run used " + D.run.images.toLocaleString() + " images, " + D.run.epochs + " epochs and " + D.run.unfreeze +
       " retrained stages, and reached <b>" + pct(cnn.accuracy.v, 1) + "</b> (" + iv(cnn.accuracy) + "). The two were scored on different validation sets (" + p.accuracy.n + " and " + cnn.accuracy.n + " paintings" + (heldOut ? ", and the earlier run picked its epoch on the same paintings it reported" : "") + "), so this is a direction, not a like-for-like measurement.</p></div>");
   }

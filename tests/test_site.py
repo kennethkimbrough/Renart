@@ -199,10 +199,11 @@ def test_cli_site_command(project: Path, tmp_path: Path, capsys):
 
 
 def test_committed_site_config_builds():
-    """The published site is built from site.toml; it must agree with the committed run 5 metrics."""
+    """The published site is built from site.toml; it must agree with the committed run 8 metrics."""
     data = site_data(ROOT / "site.toml")
     cnn = data["models"][0]
     assert cnn["key"] == "cnn_resnet18"
-    assert (cnn["accuracy"]["k"], cnn["accuracy"]["n"]) == (254, 327)
+    assert (cnn["accuracy"]["k"], cnn["accuracy"]["n"]) == (157, 213)
+    assert data["run"]["eval_split"] == "test"
     assert len(data["painters"]) == 10 and sum(s["size"] for s in data["schools"]) == 10
-    assert data["repeat"]["history_identical"] and data["repeat"]["cnn_resnet18"]
+    assert data["model"]["release"] == "model-run8" and data["ood"]["n_out"] == 150

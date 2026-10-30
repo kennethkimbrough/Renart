@@ -15,92 +15,115 @@ gone.
 
 **Results site: [kennethkimbrough.github.io/Renart](https://kennethkimbrough.github.io/Renart/)**,
 with every model's accuracy and its 95% interval, an interactive confusion
-matrix grouped by school, painter-by-painter results against the baseline, and
-the training curve. It is built from the committed run on every push.
+matrix grouped by school, painter-by-painter results and the out-of-set
+check. **Try it: [the demo page](https://kennethkimbrough.github.io/Renart/demo.html)**
+runs the trained network in your browser (ONNX + onnxruntime-web): drop in a
+painting, or pick one of the test paintings, and it ranks the ten painters.
+Nothing is uploaded.
 
 ## Results
 
-Run 5 of the training workflow, 2026-10-30
-([metrics and plots](results/runs/run5-resnet18-10x200-12ep-unfreeze2/)): ten painters, every WikiArt image available up to
-200 each (1653 images, 1326 train / 327 validation), 224×224,
+Run 8 of the training workflow, 2026-10-30
+([metrics and plots](results/runs/run8-test-split-no-sketches/)): ten
+painters, up to 200 WikiArt paintings each with drawings and studies removed
+(1429 images), split per painter into 70% train, 15% validation and 15% test.
 ResNet-18 with the last two residual stages fine-tuned for 12 epochs on a
-GitHub Actions CPU runner (13 minutes of training; the download
-took another 13).
+GitHub Actions CPU runner (13 minutes of training). Validation picks the
+epoch and fits the calibration temperature; **every number below is from the
+test split, which no training or selection step saw.**
 
-| Model | Accuracy | Macro F1 | Top-3 accuracy |
+| Model | Test accuracy (95% interval) | Macro F1 | Top-3 accuracy |
 |---|---|---|---|
-| baseline-logreg | 0.526 | 0.517 | 0.813 |
-| baseline-forest | 0.523 | 0.499 | 0.823 |
-| cnn-resnet18 | 0.777 | 0.774 | 0.960 |
+| cnn-resnet18 | **0.737** (0.674–0.792) | 0.726 | 0.892 |
+| baseline-forest | 0.582 (0.515–0.646) | 0.512 | 0.817 |
+| baseline-logreg | 0.559 (0.492–0.624) | 0.511 | 0.775 |
 | chance | 0.100 | 0.100 | 0.300 |
 
-The CNN gets 77.7% of validation paintings right and has the painter
-in its top three 96.0% of the time. The classical baseline, 102
-colour and stroke features into a logistic regression, reaches 52.6%; the
-gap between the two is the value of learned features over hand-designed ones
-for this task. An earlier run with fewer images, fewer epochs and only the
-last stage unfrozen ([run 3](results/runs/run3-resnet18-10x150-8ep/)) scored 72.0% / top-3 92.4%,
-so the extra data and capacity were worth about five points (the two runs
-were scored on different validation sets, 289 and 327 images, so that is a
-direction rather than a like-for-like measurement).
+The CNN names the right painter for 157 of 213 test paintings and has
+the right one in its top three 89% of the time. The classical baseline (102
+colour and stroke features) reaches 56–58%; the gap is the value of learned
+features over hand-designed ones here.
 
-The 95% interval on the CNN's 77.7% is 73–82% (Wilson, over 327 images);
-the baseline's is 47–58%. **Run 6 repeated run 5's request as a separate job
-on another runner and reproduced it exactly**: the same loss and accuracy at
-every epoch, the same confusion matrices for all three models and a
-byte-identical Grad-CAM image ([run 6](results/runs/run6-repeat-of-run5/)).
+**Why this is lower than the earlier 77.7%.** Run 5 made the same request
+but picked its best epoch on the same validation images it reported, and kept
+WikiArt's drawings and studies. Removing those took 122 images from
+Leonardo and 50 from Michelangelo, which had partly taught the model "pen on
+paper" rather than brushwork. 73.7% on an untouched test split is the
+figure to quote; run 5's
+([results](results/runs/run5-resnet18-10x200-12ep-unfreeze2/)) was
+optimistic. Run 6 had repeated run 5 on another runner and matched it at
+every epoch, so the pipeline is deterministic from its seeds.
 
-Per painter (CNN, validation):
+Per painter (CNN, test):
 
-| Painter | Images | Accuracy |
+| Painter | Test images | Accuracy |
 |---|---|---|
-| fra-angelico | 33 | 1.00 |
-| albrecht-durer | 40 | 0.88 |
-| hieronymus-bosch | 36 | 0.86 |
-| leonardo-da-vinci | 32 | 0.75 |
-| paolo-veronese | 26 | 0.73 |
-| titian | 40 | 0.72 |
-| michelangelo | 25 | 0.72 |
-| raphael | 28 | 0.71 |
-| hans-memling | 30 | 0.70 |
-| tintoretto | 37 | 0.65 |
+| fra-angelico | 25 | 0.92 |
+| michelangelo | 12 | 0.92 |
+| hieronymus-bosch | 23 | 0.91 |
+| albrecht-durer | 30 | 0.90 |
+| hans-memling | 22 | 0.82 |
+| tintoretto | 28 | 0.71 |
+| raphael | 19 | 0.63 |
+| paolo-veronese | 19 | 0.58 |
+| leonardo-da-vinci | 6 | 0.50 |
+| titian | 29 | 0.38 |
 
-![Confusion matrix for the CNN](results/runs/run5-resnet18-10x200-12ep-unfreeze2/confusion_cnn_resnet18.png)
+![Confusion matrix for the CNN](results/runs/run8-test-split-no-sketches/confusion_cnn_resnet18.png)
 
-The confusions are the ones an art historian would predict: the Venetians
-(Titian, Tintoretto, Veronese) are confused with each other: 18 of the 103
-Venetian validation images land on another Venetian. Raphael is read as
-Fra Angelico four times out of 28, and Fra Angelico himself, with his flat
-gold grounds, is never missed. Across all ten painters, 35 of the CNN's 73
-mistakes (48%) name a painter from the same school (north of the Alps,
-Florence and Rome, or Venice); mistakes spread at random would do that about
-26% of the time, and the logistic-regression baseline's figure is 35%. Images per painter in the subset:
-leonardo-da-vinci 164, raphael 143, titian 200, michelangelo 129, fra-angelico 167, tintoretto 187, paolo-veronese 130, albrecht-durer 200, hieronymus-bosch 182, hans-memling 151.
+Titian is the weak spot: 11 of 29 right, with his paintings spread over
+Bosch, Tintoretto and Leonardo, and Raphael is read as Titian five times
+out of 19. Veronese goes to Tintoretto five times. Across all ten painters,
+22 of the CNN's 56 mistakes (39%) name a painter from the same school
+(north of the Alps, Florence and Rome, or Venice), against 25% if mistakes
+were spread at random. Leonardo's figure rests on six test paintings and
+means little.
 
-![Grad-CAM heatmaps](results/runs/run5-resnet18-10x200-12ep-unfreeze2/gradcam.png)
+**Calibration.** Temperature scaling on validation (T = 1.01) left the
+network almost unchanged: its confidence was already close to its accuracy
+(expected calibration error 0.061 on test). A shown confidence of 70% means
+roughly seven right answers in ten.
 
-Grad-CAM shows where the network looked for six validation images: faces and
-flesh for Dürer and Michelangelo, the crowded figure groups for Bosch and
-Memling. It also shows a weakness of the data: WikiArt mixes drawings and
-studies in with finished paintings, so part of what the model learns for
-Leonardo and Michelangelo is "pen on paper", not brushwork.
+**Does it know when a painting is by none of the ten?** Not well, and the
+demo says so. 150 paintings by six painters outside the set (El Greco,
+Rubens, Rembrandt, Goya, Monet, Van Gogh) were scored alongside the test
+split. Confidence separates them from the ten with an AUROC of only 0.67;
+at a threshold that keeps 95% of the ten painters' paintings, just 7% of the
+outsiders are turned away, and Rembrandt (AUROC 0.52) not at all. A
+ten-way softmax classifier is a poor judge of "none of these"; a dedicated
+open-set method is the next step.
+
+![Out-of-set confidence](results/runs/run8-test-split-no-sketches/ood_confidence.png)
+
+![Grad-CAM heatmaps](results/runs/run8-test-split-no-sketches/gradcam.png)
+
+Grad-CAM shows where the network looked for six test paintings, one per
+painter, each titled with its answer, confidence and the true painter.
 
 Reproduce: push a change to `.github/train-request.json` with
-`{"smoke": false, "per_artist": 200, "max_artists": 10, "epochs": 12, "arch": "resnet18", "unfreeze": 2}`
-or run the *Train* workflow by hand; the commands are listed below.
+`{"smoke": false, "per_artist": 200, "max_artists": 10, "epochs": 12, "arch": "resnet18", "unfreeze": 2, "ood_per_artist": 25}`
+or run the *Train* workflow by hand. The run commits its metrics, exports the
+network to ONNX (checked against PyTorch with onnxruntime), and publishes it
+as a release such as
+[`model-run8`](https://github.com/kennethkimbrough/Renart/releases/tag/model-run8)
+that the demo page serves.
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
   hf[(huggan/wikiart<br/>parquet shards)] -->|scan artist column,<br/>fetch matching rows| dl[renart download]
-  dl --> data[data/run/train + val<br/>224x224 JPEG per artist]
+  dl --> data[data/run/train + val + test<br/>224x224 JPEG per artist,<br/>no sketches]
+  dl --> ood[data/run/ood<br/>six painters outside the set]
   data --> feat[renart.features<br/>colour palette + histograms,<br/>gradient / stroke statistics]
   feat --> base[renart train-baseline<br/>logistic regression / random forest]
   data --> cnn[renart train-cnn<br/>ResNet-18, ImageNet weights,<br/>last stages fine-tuned on CPU]
   base --> metrics[metrics JSON + confusion matrix]
   cnn --> metrics
   cnn --> cam[renart gradcam]
+  cnn --> oodc[renart ood<br/>confidence vs outsiders]
+  ood --> oodc
+  cnn --> onnx[renart export<br/>ONNX release] --> demo[demo page<br/>onnxruntime-web]
 ```
 
 **Data.** `renart download` builds a balanced subset of the
@@ -110,8 +133,10 @@ names from the dataset metadata, maps the configured painter slugs to ids, and
 scans the parquet shards reading only the `artist` column. Image bytes are
 fetched just for the row groups that contain wanted painters, which keeps the
 transfer far below the full dataset. Images are resized on the short side and
-centre-cropped to 224×224 so paintings are not stretched. Every fifth image
-per painter goes to validation.
+centre-cropped to 224×224 so paintings are not stretched. Rows in WikiArt's
+`sketch_and_study` genre are skipped. Each painter's images are split 70/15/15
+into train, validation and test by position in the sequence
+(`renart.config.split_for`), so the three splits are alike.
 
 **Classical baseline.** `renart.features` computes 102 hand-crafted features
 per image: RGB and hue histograms, circular hue statistics, a 5-colour
@@ -125,12 +150,15 @@ standardised logistic regression (or random forest) is trained on them.
 **CNN.** `renart.cnn` fine-tunes an ImageNet-pretrained ResNet-18 with the
 last residual stage(s) and the classifier unfrozen, AdamW, cosine schedule,
 label smoothing, and light augmentation (random resized crop, flip, colour
-jitter). It keeps the epoch with the best validation accuracy. Training runs
-on the CPU of a GitHub Actions runner.
+jitter). It keeps the epoch with the best validation accuracy and fits a
+calibration temperature on validation. Training runs on the CPU of a GitHub
+Actions runner.
 
 **Evaluation.** `renart.metrics` reports accuracy, macro-F1, top-3 accuracy,
-per-class accuracy and a confusion matrix for both models on the same
-validation split, against a chance rate of 1/10.
+per-class accuracy, a confusion matrix and expected calibration error for
+every model on the same test split, against a chance rate of 1/10.
+`renart ood` scores paintings by six painters outside the set and reports
+AUROC and an abstention threshold.
 
 ## Reproduce it
 
@@ -146,12 +174,15 @@ Locally, with a folder of images laid out as `data/<split>/<artist>/*.jpg`:
 ```sh
 pip install -e ".[data,train,dev]"           # torch CPU wheels: see the workflow
 python -m renart download --data data/run    # needs network; --smoke for a 2-artist test
+python -m renart download-ood --data data/run
 python -m renart train-baseline --data data/run --out results
 python -m renart train-cnn --data data/run --out results --epochs 8
+python -m renart ood --model results/cnn.pt --data data/run
+python -m renart export --model results/cnn.pt --out results/renart.onnx
 python -m renart gradcam --model results/cnn.pt --data data/run
 python -m renart predict --model results/cnn.pt some-painting.jpg
 python -m renart report results/metrics_*.json
-python -m renart site --out site             # the results site, from the run named in site.toml
+python -m renart site --out site             # results site + demo page, from the run in site.toml
 ```
 
 `pytest` runs in seconds with no network and no torch: the feature extractor,
@@ -161,20 +192,15 @@ and synthetic results.
 ## Limitations
 
 - **Ten painters, WikiArt images.** The model only chooses among the ten
-  classes it saw; anything else is forced into one of them. WikiArt images
-  vary in resolution, colour balance and framing, and some are details or
-  studies rather than finished paintings.
+  painters it saw, and it is poor at noticing when a painting is by none of
+  them (AUROC 0.67 above).
 - **Style ≠ authorship.** Workshop pieces, pupils and later copies share a
-  master's style by design. The Venetian confusions in the matrix (Titian,
-  Tintoretto, Veronese) are exactly what a style model should get wrong.
-- **Small validation set.** With 25–40 images per painter, a single image
-  moves per-class accuracy by three or four points. Treat the figures as
-  indicative, not final.
-- **No test set.** The best epoch is chosen on the same split that is
-  reported, which biases the CNN's figure slightly upward. A held-out test
-  split is the obvious next step.
-- **CPU budget.** ResNet-18 at 224 px for a handful of epochs. A larger
-  backbone, higher resolution and more images per painter would all help.
+  master's style by design; Renart says nothing about materials, age or
+  provenance.
+- **Small test set.** 213 paintings, as few as six for Leonardo. Treat
+  per-painter figures as indicative.
+- **CPU budget.** ResNet-18 at 224 px for 12 epochs. A larger backbone,
+  higher resolution and more images per painter would all help.
 
 ## Layout
 
@@ -184,6 +210,7 @@ renart/site.py the results site: committed metrics -> one self-contained index.h
 site.toml      which run the site shows, its repeat and earlier run, and the painters' schools
 tests/         pytest suite on synthetic images and results (no network, no torch)
 results/       latest/ = most recent Actions run; runs/ = kept runs referenced above
+renart/demo_template.html  the in-browser demo (onnxruntime-web), built next to the results page
 legacy/        the earlier R and TensorFlow.js attempts and the first dataset script
 .github/       ci.yml (ruff + pytest), train.yml (the training run), pages.yml (the results site)
 ```
