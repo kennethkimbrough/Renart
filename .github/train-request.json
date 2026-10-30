@@ -1,9 +1,11 @@
 {
-  "smoke": false,
+  "smoke": true,
   "per_artist": 200,
   "max_artists": 10,
   "epochs": 12,
   "arch": "resnet18",
   "unfreeze": 2,
-  "run": 5
+  "ood_per_artist": 25,
+  "run": 7,
+  "note": "smoke run to exercise the test split, out-of-set check, ONNX export and release steps"
 }
