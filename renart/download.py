@@ -241,7 +241,10 @@ def download_ood(cfg: DataConfig, artists: list[str] | None = None, per_artist: 
     wanted, missing = src.resolve(slugs)
     if not wanted:
         raise RuntimeError(f"none of the out-of-set painters exist in {repo}: {slugs}")
-    in_set = set(cfg.artists[:cfg.max_artists])
+    if cfg.stats_path.exists():  # the painters the main subset actually ended up with
+        in_set = set(json.loads(cfg.stats_path.read_text())["artists"])
+    else:
+        in_set = set(cfg.artists[:cfg.max_artists])
     overlap = [s for s in wanted.values() if s in in_set]
     if overlap:
         raise ValueError(f"out-of-set painters must not be in the main set: {overlap}")

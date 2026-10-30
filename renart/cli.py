@@ -167,6 +167,9 @@ def cmd_ood(args) -> int:
     report = ood_report(in_scores, out_scores, keep_rate=args.keep)
     report["in_split"] = splits.eval_name
     report["keep_rate"] = args.keep
+    ood_stats = Path(args.data) / "ood" / "ood_stats.json"
+    if ood_stats.exists():
+        report["painters_missing_from_dataset"] = json.loads(ood_stats.read_text()).get("missing_from_dataset", [])
     write_json(report, out / "metrics_ood.json")
     save_confidence_histogram(in_scores, out_scores, report["threshold"], out / "ood_confidence.png",
                               pretty=pretty_name)

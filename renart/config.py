@@ -30,18 +30,18 @@ DEFAULT_ARTISTS: list[str] = [
     "pieter-bruegel-the-elder",
     "hans-memling",
     "jan-van-eyck",
-    "el-greco",
 ]
 
 # Painters outside the ten, used only to measure whether the model notices a
-# painting is by none of them. Two Baroque painters who learned from the
-# Venetians, two Dutch Golden Age painters, and two Impressionists. Any slug
-# missing from the dataset is skipped and reported.
+# painting is by none of them, from near to far: El Greco trained in Titian's
+# Venice; Rubens studied the Venetians; Rembrandt and Goya are later; Monet and
+# Van Gogh are another world. Any slug missing from the dataset is skipped and
+# reported.
 OOD_ARTISTS: list[str] = [
-    "caravaggio",
+    "el-greco",
     "peter-paul-rubens",
     "rembrandt",
-    "johannes-vermeer",
+    "francisco-goya",
     "claude-monet",
     "vincent-van-gogh",
 ]

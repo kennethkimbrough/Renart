@@ -178,6 +178,44 @@ def _same_results(a: Path, b: Path) -> dict:
     return out
 
 
+def _ood_summary(report: dict | None, has_plot: bool) -> dict | None:
+    """The out-of-set check, reduced to what the page shows."""
+    if not report or not report.get("per_painter"):
+        return None
+    return {
+        "auroc": report.get("auroc"),
+        "threshold": report.get("threshold"),
+        "in_set_kept": report.get("in_set_kept"),
+        "out_of_set_rejected": report.get("out_of_set_rejected"),
+        "n_in": report.get("n_in"),
+        "n_out": report.get("n_out"),
+        "in_split": report.get("in_split", "test"),
+        "painters": [{"slug": k, "label": label(k), **v} for k, v in report["per_painter"].items()],
+        "plot": "ood_confidence.png" if has_plot else None,
+    }
+
+
+def _demo_model(meta: dict | None, release: str | None) -> dict | None:
+    """What the browser demo needs; None when the run has no exported model description."""
+    if not meta:
+        return None
+    return {
+        "classes": meta["classes"],
+        "labels": [label(c) for c in meta["classes"]],
+        "input_size": meta.get("input_size", 224),
+        "mean": meta["mean"],
+        "std": meta["std"],
+        "temperature": meta.get("temperature", 1.0),
+        "abstain_below": meta.get("abstain_below"),
+        "accuracy": meta.get("accuracy"),
+        "top3_accuracy": meta.get("top3_accuracy"),
+        "n_eval": meta.get("n_eval"),
+        "eval_split": meta.get("eval_split", "val"),
+        "release": release,
+        "url": "model/renart.onnx",
+    }
+
+
 def site_data(config_path: Path) -> dict:
     config_path = Path(config_path)
     root = config_path.parent
@@ -204,6 +242,8 @@ def site_data(config_path: Path) -> dict:
     cnn = _read(run, "metrics_cnn_resnet18.json") or {}
     history = _read(run, "cnn_history.json") or cnn.get("history") or []
     best = max(history, key=lambda e: e["val_acc"])["epoch"] if history else None
+    eval_split = cnn.get("eval_split", "val")
+    counts = stats["counts"]
 
     data = {
         "repo": REPO_URL,
@@ -212,20 +252,29 @@ def site_data(config_path: Path) -> dict:
             "name": run.name,
             "source": stats.get("source"),
             "images": stats["total_images"],
-            "train": sum(c["train"] for c in stats["counts"].values()),
-            "val": sum(c["val"] for c in stats["counts"].values()),
+            "train": sum(c["train"] for c in counts.values()),
+            "val": sum(c["val"] for c in counts.values()),
+            "test": sum(c.get("test", 0) for c in counts.values()),
+            "eval_split": eval_split,
+            "split_word": "test" if eval_split == "test" else "validation",
+            "excluded_genres": stats.get("excluded_genres") or [],
+            "excluded_images": sum((stats.get("excluded_counts") or {}).values()),
             "image_size": stats.get("image_size"),
             "epochs": cnn.get("epochs"),
             "unfreeze": cnn.get("unfreeze_stages"),
             "train_seconds": cnn.get("train_seconds"),
+            "val_accuracy": cnn.get("val_accuracy"),
         },
-        "painters": [{"slug": p, "label": label(p), "school": school_of[p], **stats["counts"][p]}
+        "painters": [{"slug": p, "label": label(p), "school": school_of[p], "test": 0, **counts[p]}
                      for p in order],
         "schools": [{"name": s["name"], "size": len(s["painters"])} for s in schools],
         "models": models,
         "history": [{k: e[k] for k in ("epoch", "train_loss", "train_acc", "val_acc")} for e in history],
         "best_epoch": best,
+        "calibration": cnn.get("calibration"),
         "gradcam": "gradcam.png" if (run / "gradcam.png").exists() else None,
+        "ood": _ood_summary(_read(run, "metrics_ood.json"), (run / "ood_confidence.png").exists()),
+        "model": _demo_model(_read(run, "renart_model.json"), cfg.get("model_release")),
         "notes_html": "",
     }
     if cfg.get("notes"):
@@ -248,21 +297,35 @@ def site_data(config_path: Path) -> dict:
     return data
 
 
-def build_site(config_path: Path, out_dir: Path) -> Path:
-    config_path = Path(config_path)
-    data = site_data(config_path)
+def _render(template_name: str, data: dict) -> str:
     # "</" must not appear inside a <script> element; "<\\/" is the same string to JSON.
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     payload = payload.replace("</", "<\\/")
-    template = resources.files("renart").joinpath("site_template.html").read_text(encoding="utf-8")
+    template = resources.files("renart").joinpath(template_name).read_text(encoding="utf-8")
     page = template.replace("/*__DATA__*/null", payload)
     if page == template:
-        raise RuntimeError("site template has no data placeholder")
+        raise RuntimeError(f"{template_name} has no data placeholder")
+    return page
+
+
+def build_site(config_path: Path, out_dir: Path) -> Path:
+    """Write index.html (the results), demo.html (try the model in the browser) and their images.
+
+    The ONNX model itself is not in the repository: the Pages workflow downloads
+    it from the release named by `model_release` in site.toml into `model/`.
+    """
+    config_path = Path(config_path)
+    data = site_data(config_path)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "index.html").write_text(page, encoding="utf-8")
+    (out_dir / "index.html").write_text(_render("site_template.html", data), encoding="utf-8")
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")
+    run_dir = config_path.parent / load_config(config_path)["run"]
     if data["gradcam"]:
-        cfg = load_config(config_path)
-        shutil.copyfile(config_path.parent / cfg["run"] / "gradcam.png", out_dir / "gradcam.png")
+        shutil.copyfile(run_dir / "gradcam.png", out_dir / "gradcam.png")
+    if data["ood"] and data["ood"]["plot"]:
+        shutil.copyfile(run_dir / "ood_confidence.png", out_dir / "ood_confidence.png")
+    if data["model"]:
+        demo = {"repo": REPO_URL, "model": data["model"], "ood": data["ood"], "run": data["run"]}
+        (out_dir / "demo.html").write_text(_render("demo_template.html", demo), encoding="utf-8")
     return out_dir / "index.html"

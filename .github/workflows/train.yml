@@ -118,21 +118,17 @@ jobs:
           pip install onnx onnxruntime
           python -m renart export --model results/cnn.pt --out results/renart.onnx \
             --check "$(find data/run/test -name '*.jpg' | sort | head -1)"
-      - name: Publish the model as a release (for the browser demo)
-        if: steps.cfg.outputs.smoke != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="model-run${{ github.run_number }}"
-          acc=$(jq -r '.accuracy' results/renart_model.json)
-          gh release create "$tag" results/renart.onnx results/renart_model.json \
-            --target "$GITHUB_SHA" --title "Model from training run ${{ github.run_number }}" \
-            --notes "ResNet-18 exported to ONNX from training run ${{ github.run_number }} (test accuracy $acc). renart_model.json carries the class list, preprocessing, calibration temperature and abstention threshold the browser demo uses. Set model_release = \"$tag\" in site.toml to serve it."
       - name: Grad-CAM
         run: python -m renart gradcam --model results/cnn.pt --data data/run --out results/gradcam.png --n 6
       - name: Report
         run: |
           cp data/run/dataset_stats.json results/
+          if [ -f data/run/ood/ood_stats.json ]; then cp data/run/ood/ood_stats.json results/; fi
+          # One test painting per painter, for the demo page: never seen in training or selection.
+          mkdir -p results/samples
+          for d in data/run/test/*/; do
+            cp "$(find "$d" -name '*.jpg' | sort | head -1)" "results/samples/$(basename "$d").jpg"
+          done
           python -m renart report results/metrics_*.json | tee results/comparison.md
           {
             echo "## Results (smoke=${{ steps.cfg.outputs.smoke }})"
@@ -163,3 +159,14 @@ jobs:
           name: model-${{ github.run_number }}
           path: results/cnn.pt
           retention-days: 14
+      - name: Publish the model as a release (for the browser demo)
+        if: steps.cfg.outputs.smoke != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="model-run${{ github.run_number }}"
+          acc=$(jq -r '.accuracy' results/renart_model.json)
+          gh release create "$tag" results/renart.onnx results/renart_model.json results/samples/*.jpg \
+            --target "$GITHUB_SHA" --title "Model from training run ${{ github.run_number }}" \
+            --notes "ResNet-18 exported to ONNX from training run ${{ github.run_number }} (test accuracy $acc). renart_model.json carries the class list, preprocessing, calibration temperature and abstention threshold the browser demo uses; the JPEGs are one test-split painting per painter for the demo's samples. Set model_release = \"$tag\" in site.toml to serve it."
+          echo "::notice title=Model release::$tag"

@@ -1,5 +1,5 @@
 {
-  "smoke": true,
+  "smoke": false,
   "per_artist": 200,
   "max_artists": 10,
   "epochs": 12,
@@ -7,5 +7,5 @@
   "unfreeze": 2,
   "ood_per_artist": 25,
   "run": 7,
-  "note": "smoke run to exercise the test split, out-of-set check, ONNX export and release steps"
+  "note": "same request as run 5, scored on a held-out test split with drawings filtered out, plus the out-of-set check and ONNX export"
 }
