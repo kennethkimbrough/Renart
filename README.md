@@ -21,6 +21,23 @@ runs the trained network in your browser (ONNX + onnxruntime-web): drop in a
 painting, or pick one of the test paintings, and it ranks the ten painters.
 Nothing is uploaded.
 
+## What I built, decided and learned
+
+- **Built:** a reproducible pipeline that ranks which of ten Renaissance
+  painters most likely made a painting. A fine-tuned ResNet-18 gets 77.7% of
+  validation paintings right and has the painter in its top three 96% of the
+  time, against 52.6% for a baseline built on hand-designed colour and
+  brushstroke features. Every number comes from a recorded GitHub Actions run.
+- **Hardest decision:** removing the accuracy claims the first version of this
+  README made, which no code in the repository had produced, and saying plainly
+  what the model cannot do. A smaller result I can reproduce is worth more than
+  a bigger one I can't.
+- **What I learned:** a model's mistakes say more than its accuracy. The
+  confusion matrix mixes up Titian, Tintoretto and Veronese, the same painters
+  art historians group together, and Grad-CAM showed the model partly learning
+  "pen on paper", because the dataset mixes drawings in with paintings. Cleaning
+  the data would help more than a bigger network.
+
 ## Results
 
 Run 8 of the training workflow, 2026-10-30
