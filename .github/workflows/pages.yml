@@ -1,0 +1,57 @@
+name: Results site
+
+# Builds the results site from the committed run named in site.toml and publishes it to the
+# gh-pages branch, which GitHub Pages serves at https://kennethkimbrough.github.io/Renart/
+# Nothing is trained or downloaded here: every number on the page is read from results/.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e .
+      - name: Build the site
+        run: python -m renart site --config site.toml --out site
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          user_name: "github-actions[bot]"
+          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          commit_message: "Deploy results site"
+
+  verify:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the site to answer
+        run: |
+          url="https://kennethkimbrough.github.io/Renart/"
+          for i in $(seq 1 20); do
+            code=$(curl -sL -o /dev/null -w "%{http_code}" "$url")
+            echo "attempt $i: HTTP $code"
+            if [ "$code" = "200" ] && curl -sL "$url" | grep -q "Which Renaissance master"; then
+              echo "::notice title=Live site::$url is serving the results site (HTTP 200)"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error title=Live site::$url did not answer (last HTTP $code). Enable GitHub Pages from the gh-pages branch in Settings > Pages."
+          exit 1
