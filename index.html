@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Renart: results</title>
+<meta name="description" content="Style-based artist attribution for Renaissance paintings: a reproducible pipeline with measured results.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5efe3;
+  --surface: #fffcf6;
+  --surface-2: #f8f2e7;
+  --line: #e7dccb;
+  --line-strong: #d4c4ab;
+  --text: #22180f;
+  --text-2: #4e4135;
+  --text-3: #85766a;
+  --gold: #b7862f;
+  --gold-ink: #8a6216;
+  --right: 183, 134, 47;
+  --wrong: 176, 72, 48;
+  --muted-dot: #9b8f82;
+  --band: rgba(183, 134, 47, 0.30);
+  --band-2: rgba(120, 108, 96, 0.22);
+  --shadow: 0 1px 2px rgba(34, 24, 15, 0.05), 0 10px 30px rgba(34, 24, 15, 0.07);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14100b; --surface: #1c1610; --surface-2: #231c14; --line: #34291e; --line-strong: #4a3c2c;
+    --text: #f4ebdc; --text-2: #d2c4b0; --text-3: #9c8d7c; --gold: #d8ad55; --gold-ink: #e6c27a;
+    --right: 216, 173, 85; --wrong: 214, 104, 78; --muted-dot: #8c8072;
+    --band: rgba(216, 173, 85, 0.30); --band-2: rgba(200, 186, 170, 0.20);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.3); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14100b; --surface: #1c1610; --surface-2: #231c14; --line: #34291e; --line-strong: #4a3c2c;
+  --text: #f4ebdc; --text-2: #d2c4b0; --text-3: #9c8d7c; --gold: #d8ad55; --gold-ink: #e6c27a;
+  --right: 216, 173, 85; --wrong: 214, 104, 78; --muted-dot: #8c8072;
+  --band: rgba(216, 173, 85, 0.30); --band-2: rgba(200, 186, 170, 0.20);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.3); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; font-feature-settings: "tnum" 1; }
+a { color: var(--gold-ink); text-underline-offset: 2px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+.serif { font-family: "Libre Baskerville", Georgia, "Times New Roman", serif; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+@media (max-width: 640px) { .wrap { padding-left: 16px; padding-right: 16px; } }
+
+header.top { padding-top: 60px; padding-bottom: 30px; }
+.kicker { font-weight: 800; font-size: 13px; letter-spacing: 4px; color: var(--gold-ink); }
+h1 { font-family: "Libre Baskerville", Georgia, serif; font-weight: 400; font-size: clamp(32px, 5.4vw, 52px); line-height: 1.1; letter-spacing: -0.5px; margin: 12px 0 18px; max-width: 18ch; }
+h1 em { color: var(--gold-ink); }
+.lead { font-size: 18px; color: var(--text-2); max-width: 66ch; margin: 0 0 24px; }
+.stats { display: flex; flex-wrap: wrap; gap: 28px; margin: 0 0 24px; }
+.stat b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.1; }
+.stat span { font-size: 13.5px; color: var(--text-3); }
+.stat.dim b { color: var(--text-3); }
+.links { display: flex; flex-wrap: wrap; gap: 18px; font-size: 15px; font-weight: 600; }
+
+section { margin: 0 0 28px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 26px; }
+@media (max-width: 640px) { .card { padding: 18px 14px; border-radius: 14px; } }
+h2 { font-family: "Libre Baskerville", Georgia, serif; font-weight: 400; font-size: 25px; margin: 0 0 8px; letter-spacing: -0.2px; }
+.sub { color: var(--text-3); font-size: 14.5px; margin: 0 0 18px; max-width: 76ch; }
+.callout { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--text-2); font-size: 15px; }
+.callout b { color: var(--text); }
+
+.toggle { display: inline-flex; flex-wrap: wrap; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; margin-bottom: 16px; }
+.toggle button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font-size: 14px; font-weight: 600; color: var(--text-3); cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+/* dot-and-interval rows */
+.rows { display: grid; grid-template-columns: minmax(150px, 230px) minmax(0, 1fr) 92px; gap: 10px 16px; align-items: center; }
+@media (max-width: 640px) { .rows { grid-template-columns: minmax(96px, 120px) minmax(0, 1fr) 64px; gap: 10px 10px; } }
+.rows .name b { display: block; font-weight: 700; }
+.rows .name span { display: block; font-size: 12.5px; color: var(--text-3); line-height: 1.4; }
+.rows .val { text-align: right; font-weight: 800; font-size: 17px; }
+.rows .val small { display: block; font-weight: 500; font-size: 11.5px; color: var(--text-3); }
+.scale { position: relative; height: 26px; }
+.scale .base { position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--line); border-radius: 1px; }
+.scale .chance { position: absolute; top: 2px; bottom: 2px; width: 0; border-left: 1.5px dashed var(--line-strong); }
+.scale .band { position: absolute; top: 8px; height: 10px; border-radius: 5px; background: var(--band); }
+.scale .band.alt { background: var(--band-2); }
+.scale .dot { position: absolute; top: 6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--gold); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--gold); }
+.scale .dot.alt { background: var(--surface); box-shadow: 0 0 0 2px var(--muted-dot); }
+.axis { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-3); }
+.axisrow { display: grid; grid-template-columns: minmax(150px, 230px) minmax(0, 1fr) 92px; gap: 16px; margin-top: 4px; }
+@media (max-width: 640px) { .axisrow { grid-template-columns: minmax(96px, 120px) minmax(0, 1fr) 64px; gap: 10px; } }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-3); margin-top: 14px; align-items: center; }
+.legend svg { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+.key.gold { background: var(--gold); }
+.key.hollow { border: 2px solid var(--muted-dot); }
+.key.dash { width: 0; height: 14px; border-radius: 0; border-left: 1.5px dashed var(--line-strong); margin-right: 8px; }
+
+/* confusion matrix */
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.swipe { display: none; }
+@media (max-width: 640px) { .swipe { display: inline; } }
+table.cm { border-collapse: separate; border-spacing: 2px; margin: 0 auto 0 0; }
+table.cm th { font-size: 12.5px; font-weight: 600; color: var(--text-2); padding: 3px 6px; white-space: nowrap; }
+table.cm thead th.col { height: 120px; vertical-align: bottom; }
+table.cm thead th.col span { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); }
+table.cm tbody th.row { text-align: right; cursor: pointer; }
+table.cm tbody tr[aria-selected="true"] th.row { color: var(--gold-ink); }
+table.cm th.school { font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-3); text-align: right; padding-right: 10px; width: 92px; white-space: normal; line-height: 1.5; }
+table.cm td { width: 42px; height: 38px; text-align: center; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; color: var(--text); }
+table.cm td.zero { color: transparent; }
+table.cm td.diag { box-shadow: inset 0 0 0 1.5px rgba(var(--right), 0.85); }
+table.cm td:hover { outline: 2px solid var(--text); outline-offset: -2px; }
+table.cm td.sp, table.cm th.sp { width: 6px; padding: 0; background: none; cursor: default; }
+table.cm tr.sp td { height: 6px; padding: 0; background: none; cursor: default; }
+table.cm td.sp:hover, table.cm tr.sp td:hover { outline: none; }
+@media (max-width: 640px) { table.cm td { width: 32px; height: 30px; font-size: 11.5px; } table.cm th.school { width: 64px; font-size: 9.5px; letter-spacing: 0.6px; } }
+.cm-axis { font-size: 12.5px; color: var(--text-3); margin: 6px 0 0; }
+.went { margin-top: 18px; }
+.went-bars { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) 44px; gap: 6px 12px; align-items: center; font-size: 14px; margin-top: 10px; }
+.went-bars .bar { height: 14px; border-radius: 4px; }
+.went-bars .n { text-align: right; font-weight: 700; color: var(--text-2); }
+@media (max-width: 640px) { .went-bars { grid-template-columns: 104px minmax(0, 1fr) 28px; gap: 6px 8px; font-size: 13px; } }
+
+/* training chart */
+.chart > svg { display: block; }
+.chart text { fill: var(--text-3); font-size: 11px; font-family: "Inter", sans-serif; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.fact { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.fact h3 { font-size: 16px; margin: 0 0 6px; }
+.fact p { margin: 0 0 8px; color: var(--text-2); font-size: 14.5px; }
+.fact p:last-child { margin-bottom: 0; }
+.checks { list-style: none; padding: 0; margin: 8px 0 0; font-size: 14px; color: var(--text-2); }
+.checks li { padding-left: 22px; position: relative; margin-bottom: 4px; }
+.checks li::before { content: "✓"; position: absolute; left: 2px; color: var(--gold-ink); font-weight: 800; }
+.checks li.no::before { content: "✗"; color: rgb(var(--wrong)); }
+figure { margin: 0; }
+figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+figcaption { font-size: 14px; color: var(--text-3); margin-top: 10px; max-width: 76ch; }
+
+.notes h3 { font-family: "Libre Baskerville", Georgia, serif; font-weight: 400; font-size: 21px; margin: 0 0 10px; }
+.notes ul { padding-left: 20px; margin: 0; }
+.notes li { margin-bottom: 8px; color: var(--text-2); }
+.notes strong { color: var(--text); }
+footer { padding-top: 6px; padding-bottom: 48px; color: var(--text-3); font-size: 14px; }
+footer p { max-width: 76ch; }
+</style>
+</head>
+<body>
+<header class="top wrap">
+  <div class="kicker">RENART</div>
+  <h1>Which Renaissance master <em>painted it?</em></h1>
+  <p class="lead">Renart ranks which of ten painters most likely made a painting, from its style alone. A fine-tuned network is compared with a classical baseline on the same held-out images, and every number below comes from a committed, reproducible training run. It is not an authentication tool: style cannot tell a master from a good copy.</p>
+  <div class="stats" id="stats"></div>
+  <div class="links">
+    <a id="repo-link" href="#">Code and data on GitHub</a>
+    <a href="#confusion">Where it goes wrong</a>
+    <a href="#repeat">How it was checked</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" aria-labelledby="models-h">
+    <h2 id="models-h">Three models, the same paintings</h2>
+    <p class="sub" id="models-sub"></p>
+    <div class="toggle" role="group" aria-label="Measure" id="metric-toggle">
+      <button type="button" data-metric="accuracy" aria-pressed="true">Right first guess</button>
+      <button type="button" data-metric="top3" aria-pressed="false">Right painter in the top 3</button>
+    </div>
+    <div class="rows" id="model-rows"></div>
+    <div class="axisrow"><span></span><div class="axis"><span>0%</span><span>50%</span><span>100%</span></div><span></span></div>
+    <div class="legend"><span><span class="key gold"></span>estimate</span><span>band: 95% interval</span><span><span class="key dash"></span>chance (<span id="chance-text"></span>)</span></div>
+  </section>
+
+  <section class="card" id="confusion" aria-labelledby="cm-h">
+    <h2 id="cm-h">Where it goes wrong</h2>
+    <p class="sub">Each row is the painter who actually made the paintings; each column is the model's answer. The outlined diagonal is right; everything else is a mistake. Painters are grouped by school. Click a row to see where that painter's paintings went.</p>
+    <div class="toggle" role="group" aria-label="Model" id="cm-toggle"></div>
+    <div class="scroll"><table class="cm" id="cm"></table></div>
+    <p class="cm-axis">Rows: true painter · columns: model's first guess · darker means a larger share of the row<span class="swipe"> · swipe sideways for every column</span></p>
+    <p class="callout" id="school-callout"></p>
+    <div class="went" id="went" aria-live="polite"></div>
+  </section>
+
+  <section class="card" aria-labelledby="painters-h">
+    <h2 id="painters-h">Painter by painter</h2>
+    <p class="sub" id="painters-sub"></p>
+    <div class="rows" id="painter-rows"></div>
+    <div class="axisrow"><span></span><div class="axis"><span>0%</span><span>50%</span><span>100%</span></div><span></span></div>
+    <div class="legend"><span><span class="key gold"></span>ResNet-18</span><span><span class="key hollow"></span>logistic regression baseline</span><span>bands: 95% intervals</span></div>
+  </section>
+
+  <section class="card" aria-labelledby="train-h">
+    <h2 id="train-h">Training</h2>
+    <p class="sub" id="train-sub"></p>
+    <div class="chart" id="train-chart"></div>
+  </section>
+
+  <section class="card" id="gradcam-card" aria-labelledby="gradcam-h">
+    <h2 id="gradcam-h">Where the network looks</h2>
+    <figure>
+      <img id="gradcam" alt="Grad-CAM heatmaps over six validation paintings, one each by Dürer, Fra Angelico, Memling, Bosch, Leonardo and Michelangelo, all correctly attributed">
+      <figcaption>Grad-CAM highlights the regions that drove each prediction, red strongest. Faces and flesh carry Dürer and Michelangelo; the crowded figure groups carry Bosch and Memling. It also shows a weakness in the data: WikiArt mixes drawings and studies in with finished paintings, so part of what the model learns for Leonardo and Michelangelo is pen on paper rather than brushwork.</figcaption>
+    </figure>
+  </section>
+
+  <section class="card" id="repeat" aria-labelledby="repeat-h">
+    <h2 id="repeat-h">How it was checked</h2>
+    <div class="grid2" id="repeat-body"></div>
+  </section>
+
+  <section class="card notes" aria-label="Limitations">
+    <div id="notes-body"></div>
+  </section>
+</main>
+
+<footer class="wrap"><p id="footer-text"></p></footer>
+
+<script id="data" type="application/json">{"best_epoch":7,"gradcam":"gradcam.png","history":[{"epoch":1,"train_acc":0.5256410256410257,"train_loss":1.5174969245945167,"val_acc":0.6391437308868502},{"epoch":2,"train_acc":0.7639517345399698,"train_loss":0.9094085535132868,"val_acc":0.6880733944954128},{"epoch":3,"train_acc":0.8725490196078431,"train_loss":0.6913123878778196,"val_acc":0.7186544342507645},{"epoch":4,"train_acc":0.9095022624434389,"train_loss":0.582732414767753,"val_acc":0.7339449541284404},{"epoch":5,"train_acc":0.9381598793363499,"train_loss":0.48721218954204254,"val_acc":0.7155963302752294},{"epoch":6,"train_acc":0.969079939668175,"train_loss":0.43471215699053456,"val_acc":0.7308868501529052},{"epoch":7,"train_acc":0.9864253393665159,"train_loss":0.391112008245822,"val_acc":0.7767584097859327},{"epoch":8,"train_acc":0.9886877828054299,"train_loss":0.37796918811841246,"val_acc":0.7706422018348624},{"epoch":9,"train_acc":0.9932126696832579,"train_loss":0.3596103048432467,"val_acc":0.7706422018348624},{"epoch":10,"train_acc":0.9984917043740573,"train_loss":0.3554202861645642,"val_acc":0.7737003058103975},{"epoch":11,"train_acc":0.9969834087481146,"train_loss":0.3485657004569271,"val_acc":0.7675840978593272},{"epoch":12,"train_acc":0.995475113122172,"train_loss":0.3528270602765666,"val_acc":0.7675840978593272}],"models":[{"accuracy":{"hi":0.8185,"k":254,"lo":0.7286,"n":327,"v":0.7768},"chance":0.1,"description":"ImageNet-pretrained network with its last two stages retrained on the paintings.","key":"cnn_resnet18","label":"ResNet-18, fine-tuned","macro_f1":0.7744,"matrix":[[21,2,1,4,0,0,2,0,0,0],[1,31,1,1,1,0,0,1,0,0],[1,1,35,0,3,0,0,0,0,0],[0,0,0,33,0,0,0,0,0,0],[0,3,1,0,24,0,2,1,1,0],[0,1,2,0,3,18,0,0,1,0],[2,0,0,4,1,0,20,0,1,0],[1,1,1,1,0,0,1,29,4,2],[0,0,2,2,0,0,1,4,24,4],[0,0,1,1,0,0,1,3,1,19]],"painters":[{"hi":0.8334,"k":21,"lo":0.5212,"n":30,"v":0.7},{"hi":0.9392,"k":31,"lo":0.7134,"n":36,"v":0.8611},{"hi":0.9454,"k":35,"lo":0.7389,"n":40,"v":0.875},{"hi":1.0,"k":33,"lo":0.8957,"n":33,"v":1.0},{"hi":0.8675,"k":24,"lo":0.5789,"n":32,"v":0.75},{"hi":0.8572,"k":18,"lo":0.5242,"n":25,"v":0.72},{"hi":0.8475,"k":20,"lo":0.5294,"n":28,"v":0.7143},{"hi":0.8389,"k":29,"lo":0.5716,"n":40,"v":0.725},{"hi":0.7817,"k":24,"lo":0.4876,"n":37,"v":0.6486},{"hi":0.863,"k":19,"lo":0.5392,"n":26,"v":0.7308}],"school_errors":{"errors":73,"expected_share":0.2572,"within":35},"top3":{"hi":0.9766,"k":314,"lo":0.9332,"n":327,"v":0.9602}},{"accuracy":{"hi":0.5795,"k":172,"lo":0.4719,"n":327,"v":0.526},"chance":0.1,"description":"102 hand-crafted colour and brush-stroke features per image.","key":"baseline_logreg","label":"Logistic regression","macro_f1":0.5166,"matrix":[[18,2,1,5,0,0,1,1,1,1],[1,22,1,3,0,1,3,3,1,1],[3,1,22,0,1,7,3,1,2,0],[2,2,1,21,0,2,3,0,1,1],[0,1,1,3,22,1,3,1,0,0],[0,3,1,1,6,10,2,0,2,0],[6,2,1,2,1,3,9,1,2,1],[2,1,2,0,0,0,7,22,3,3],[2,3,1,1,1,1,3,5,17,3],[3,5,0,0,1,0,3,2,3,9]],"painters":[{"hi":0.7541,"k":18,"lo":0.4232,"n":30,"v":0.6},{"hi":0.7522,"k":22,"lo":0.4486,"n":36,"v":0.6111},{"hi":0.6929,"k":22,"lo":0.3983,"n":40,"v":0.55},{"hi":0.7781,"k":21,"lo":0.4662,"n":33,"v":0.6364},{"hi":0.8205,"k":22,"lo":0.5143,"n":32,"v":0.6875},{"hi":0.5926,"k":10,"lo":0.234,"n":25,"v":0.4},{"hi":0.5066,"k":9,"lo":0.1793,"n":28,"v":0.3214},{"hi":0.6929,"k":22,"lo":0.3983,"n":40,"v":0.55},{"hi":0.6162,"k":17,"lo":0.3104,"n":37,"v":0.4595},{"hi":0.5378,"k":9,"lo":0.1941,"n":26,"v":0.3462}],"school_errors":{"errors":155,"expected_share":0.2624,"within":55},"top3":{"hi":0.8519,"k":266,"lo":0.7677,"n":327,"v":0.8135}},{"accuracy":{"hi":0.5765,"k":171,"lo":0.4688,"n":327,"v":0.5229},"chance":0.1,"description":"The same 102 hand-crafted features, with a random forest.","key":"baseline_forest","label":"Random forest","macro_f1":0.499,"matrix":[[13,4,0,9,0,0,0,3,0,1],[4,19,2,1,3,0,3,2,2,0],[2,4,22,1,4,2,1,3,1,0],[3,1,0,23,0,3,2,0,1,0],[0,0,2,0,27,0,2,1,0,0],[0,3,1,0,6,12,3,0,0,0],[2,4,0,4,1,2,9,2,3,1],[1,2,0,0,0,0,5,29,2,1],[1,3,2,1,0,2,1,11,13,3],[3,5,0,0,0,0,2,7,5,4]],"painters":[{"hi":0.608,"k":13,"lo":0.2738,"n":30,"v":0.4333},{"hi":0.6801,"k":19,"lo":0.3701,"n":36,"v":0.5278},{"hi":0.6929,"k":22,"lo":0.3983,"n":40,"v":0.55},{"hi":0.8262,"k":23,"lo":0.5266,"n":33,"v":0.697},{"hi":0.9314,"k":27,"lo":0.6825,"n":32,"v":0.8438},{"hi":0.665,"k":12,"lo":0.3003,"n":25,"v":0.48},{"hi":0.5066,"k":9,"lo":0.1793,"n":28,"v":0.3214},{"hi":0.8389,"k":29,"lo":0.5716,"n":40,"v":0.725},{"hi":0.5124,"k":13,"lo":0.2183,"n":37,"v":0.3514},{"hi":0.3353,"k":4,"lo":0.0615,"n":26,"v":0.1538}],"school_errors":{"errors":156,"expected_share":0.2557,"within":68},"top3":{"hi":0.8602,"k":269,"lo":0.7776,"n":327,"v":0.8226}}],"notes_html":"<h3>Limitations<\/h3>\n<ul><li><strong>Ten painters, WikiArt images.<\/strong> The model only chooses among the ten painters it saw; anything else is forced into one of them. WikiArt images vary in resolution, colour balance and framing, and some are details or studies rather than finished paintings.<\/li><li><strong>Style is not authorship.<\/strong> Workshop pieces, pupils and later copies share a master's style by design. Renart says nothing about materials, age or provenance, and it cannot tell a painting from a good copy of it.<\/li><li><strong>Small validation set.<\/strong> With 25 to 40 images per painter, a single image moves a painter's accuracy by three or four points; the intervals on this page show how wide that uncertainty is.<\/li><li><strong>No separate test set.<\/strong> The reported epoch is the one with the best validation accuracy, chosen on the same images it is scored on, which biases the CNN's figure slightly upward. A held-out test split is the obvious next step.<\/li><li><strong>CPU budget.<\/strong> ResNet-18 at 224 pixels for 12 epochs on a GitHub Actions runner. A larger backbone, higher resolution and more images per painter would all help.<\/li><\/ul>","painters":[{"label":"Hans Memling","school":"North of the Alps","slug":"hans-memling","train":121,"val":30},{"label":"Hieronymus Bosch","school":"North of the Alps","slug":"hieronymus-bosch","train":146,"val":36},{"label":"Albrecht Dürer","school":"North of the Alps","slug":"albrecht-durer","train":160,"val":40},{"label":"Fra Angelico","school":"Florence and Rome","slug":"fra-angelico","train":134,"val":33},{"label":"Leonardo da Vinci","school":"Florence and Rome","slug":"leonardo-da-vinci","train":132,"val":32},{"label":"Michelangelo","school":"Florence and Rome","slug":"michelangelo","train":104,"val":25},{"label":"Raphael","school":"Florence and Rome","slug":"raphael","train":115,"val":28},{"label":"Titian","school":"Venice","slug":"titian","train":160,"val":40},{"label":"Tintoretto","school":"Venice","slug":"tintoretto","train":150,"val":37},{"label":"Paolo Veronese","school":"Venice","slug":"paolo-veronese","train":104,"val":26}],"previous":{"accuracy":{"hi":0.7684,"k":208,"lo":0.6653,"n":289,"v":0.7197},"epochs":8,"images":1452,"name":"run3-resnet18-10x150-8ep","path":"results/runs/run3-resnet18-10x150-8ep","top3":0.9239,"unfreeze":1},"repeat":{"baseline_forest":true,"baseline_logreg":true,"cnn_resnet18":true,"history_identical":true,"name":"run6-repeat-of-run5","path":"results/runs/run6-repeat-of-run5","train_seconds":[797.9,492.6]},"repo":"https://github.com/kennethkimbrough/Renart","run":{"epochs":12,"image_size":[224,224],"images":1653,"name":"run5-resnet18-10x200-12ep-unfreeze2","path":"results/runs/run5-resnet18-10x200-12ep-unfreeze2","source":"huggan/wikiart@main","train":1326,"train_seconds":797.9,"unfreeze":2,"val":327},"schools":[{"name":"North of the Alps","size":3},{"name":"Florence and Rome","size":4},{"name":"Venice","size":3}]}</script>
+<script>
+(function () {
+  "use strict";
+  const D = JSON.parse(document.getElementById("data").textContent);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  const pct = (v, d) => (v * 100).toFixed(d || 0) + "%";
+  const iv = e => pct(e.lo) + "–" + pct(e.hi);
+  const cnn = D.models[0], base = D.models.find(m => m.key === "baseline_logreg") || D.models[1];
+  const chance = cnn.chance || 1 / D.painters.length;
+
+  // header
+  document.getElementById("repo-link").href = D.repo;
+  document.getElementById("stats").innerHTML = [
+    ["<b>" + pct(cnn.accuracy.v, 1) + "</b><span>right first guess</span>"],
+    ["<b>" + pct(cnn.top3.v, 1) + "</b><span>right painter in the top 3</span>"],
+    base ? ["<b>" + pct(base.accuracy.v, 1) + "</b><span>classical baseline</span>", "dim"] : null,
+    ["<b>" + pct(chance, 0) + "</b><span>chance, with " + D.painters.length + " painters</span>", "dim"],
+  ].filter(Boolean).map(s => '<div class="stat ' + (s[1] || "") + '">' + s[0] + "</div>").join("");
+
+  // interval rows
+  function scale(entries) {
+    return '<div class="scale" aria-hidden="true"><div class="base"></div><div class="chance" style="left:' + chance * 100 + '%"></div>' +
+      entries.map(([e, alt]) => '<div class="band' + (alt ? " alt" : "") + '" style="left:' + e.lo * 100 + "%;width:" + Math.max(0.8, (e.hi - e.lo) * 100) + '%"></div>').join("") +
+      entries.map(([e, alt]) => '<div class="dot' + (alt ? " alt" : "") + '" style="left:' + e.v * 100 + '%"></div>').join("") + "</div>";
+  }
+
+  let metric = "accuracy";
+  function renderModels() {
+    const n = cnn.accuracy.n;
+    document.getElementById("models-sub").textContent =
+      "All three models were scored on the same " + n + " validation paintings, held out from training. " +
+      (metric === "accuracy" ? "Right first guess: the painter the model ranks first is the true one." :
+        "Top 3: the true painter is among the model's three highest-ranked answers.") +
+      " Bands are 95% Wilson intervals over the " + n + " paintings.";
+    document.getElementById("chance-text").textContent = metric === "accuracy" ? pct(chance) : pct(Math.min(1, chance * 3));
+    document.querySelector("#model-rows").innerHTML = D.models.map(m => {
+      const e = m[metric];
+      return '<div class="name"><b>' + esc(m.label) + "</b><span>" + esc(m.description) + "</span></div>" +
+        scale([[e, m !== cnn]]) + '<div class="val">' + pct(e.v, 1) + "<small>" + iv(e) + "</small></div>";
+    }).join("");
+    document.querySelector("#model-rows").parentElement.querySelectorAll(".chance").forEach(c => {
+      c.style.left = (metric === "accuracy" ? chance : Math.min(1, chance * 3)) * 100 + "%";
+    });
+  }
+  document.querySelectorAll("#metric-toggle button").forEach(b => b.addEventListener("click", () => {
+    metric = b.dataset.metric;
+    document.querySelectorAll("#metric-toggle button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderModels();
+  }));
+  renderModels();
+
+  // confusion matrix
+  let cmModel = cnn, selected = null;
+  const tog = document.getElementById("cm-toggle");
+  tog.innerHTML = D.models.map((m, i) => '<button type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '">' + esc(m.label) + "</button>").join("");
+  tog.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    cmModel = D.models[+b.dataset.i];
+    tog.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderCM();
+  }));
+
+  const P = D.painters, K = P.length;
+  const schoolEnds = new Set();
+  { let i = 0; for (const s of D.schools) { i += s.size; schoolEnds.add(i - 1); } }
+
+  function renderCM() {
+    const M = cmModel.matrix;
+    const sep = j => schoolEnds.has(j) && j < K - 1;
+    let h = '<thead><tr><th></th><th></th>' + P.map((p, j) => '<th class="col" scope="col"><span>' + esc(p.label) + "</span></th>" + (sep(j) ? '<th class="sp"></th>' : "")).join("") + "</tr></thead><tbody>";
+    let start = 0, k = 0;
+    for (let i = 0; i < K; i++) {
+      const total = M[i].reduce((a, b) => a + b, 0);
+      let schoolCell = "";
+      if (i === start) { const sc = D.schools[k++]; schoolCell = '<th class="school" rowspan="' + sc.size + '">' + esc(sc.name) + "</th>"; start += sc.size; }
+      h += '<tr data-i="' + i + '" aria-selected="' + (selected === i) + '">' + schoolCell + '<th class="row" scope="row">' + esc(P[i].label) + "</th>";
+      for (let j = 0; j < K; j++) {
+        const c = M[i][j], share = total ? c / total : 0, diag = i === j;
+        const alpha = c === 0 ? 0 : 0.08 + 0.82 * share;
+        const title = diag ? P[i].label + ": " + c + " of " + total + " right (" + pct(share) + ")" :
+          c + " of " + total + " " + P[i].label + " paintings were called " + P[j].label;
+        h += '<td class="' + (diag ? "diag" : "") + (c === 0 ? " zero" : "") + '" data-i="' + i + '" title="' + esc(title) + '" style="background:rgba(' + (diag ? "var(--right)" : "var(--wrong)") + "," + alpha.toFixed(3) + ')">' + c + "</td>" + (sep(j) ? '<td class="sp"></td>' : "");
+      }
+      h += "</tr>" + (sep(i) ? '<tr class="sp"><td colspan="' + (K + 2 + D.schools.length - 1) + '"></td></tr>' : "");
+    }
+    const t = document.getElementById("cm");
+    t.innerHTML = h + "</tbody>";
+    t.querySelectorAll("tr[data-i]").forEach(el => el.addEventListener("click", () => {
+      selected = +el.dataset.i; renderCM();
+    }));
+    const se = cmModel.school_errors;
+    document.getElementById("school-callout").innerHTML =
+      "<b>" + esc(cmModel.label) + "</b>: " + se.within + " of its " + se.errors + " mistakes (" + pct(se.within / se.errors) +
+      ") named a painter from the same school. If its mistakes were spread at random over the other painters, about " + pct(se.expected_share) + " would." +
+      (cmModel === cnn && base ? " The baseline's figure is " + pct(base.school_errors.within / base.school_errors.errors) + "." : "");
+    renderWent();
+  }
+
+  function renderWent() {
+    const el = document.getElementById("went");
+    if (selected == null) { el.innerHTML = ""; return; }
+    const row = cmModel.matrix[selected], total = row.reduce((a, b) => a + b, 0);
+    const parts = row.map((c, j) => [c, j]).filter(x => x[0] > 0).sort((a, b) => b[0] - a[0]);
+    el.innerHTML = "<b>" + esc(P[selected].label) + "</b>: " + total + " validation paintings, as " + esc(cmModel.label) + " attributed them" +
+      '<div class="went-bars">' + parts.map(([c, j]) => '<span>' + esc(P[j].label) + '</span><div class="bar" style="width:' + (c / total * 100) + "%;background:rgba(var(" + (j === selected ? "--right" : "--wrong") + '),0.85)"></div><span class="n">' + c + "</span>").join("") + "</div>";
+  }
+  renderCM();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderCM);
+
+  // painters
+  document.getElementById("painters-sub").textContent =
+    "Share of each painter's validation paintings that the model attributed correctly. With 25 to 40 paintings per painter the intervals are wide: one painting moves a painter's figure by 3 to 4 points.";
+  const order = P.map((p, i) => i).sort((a, b) => cnn.painters[b].v - cnn.painters[a].v);
+  document.getElementById("painter-rows").innerHTML = order.map(i => {
+    const e = cnn.painters[i], b = base ? base.painters[i] : null;
+    return '<div class="name"><b>' + esc(P[i].label) + "</b><span>" + esc(P[i].school) + " · " + e.n + " paintings</span></div>" +
+      scale(b ? [[b, true], [e, false]] : [[e, false]]) +
+      '<div class="val">' + pct(e.v) + "<small>" + (b ? "baseline " + pct(b.v) : iv(e)) + "</small></div>";
+  }).join("");
+
+  // training chart
+  (function () {
+    const H = D.history;
+    const el = document.getElementById("train-chart");
+    if (!H.length) { el.closest("section").hidden = true; return; }
+    const best = H.find(e => e.epoch === D.best_epoch);
+    document.getElementById("train-sub").textContent =
+      D.run.epochs + " epochs on " + D.run.train.toLocaleString() + " training paintings, on the CPU of a GitHub Actions runner (" +
+      Math.round(D.run.train_seconds / 60) + " minutes). Training accuracy climbs towards 100% while validation accuracy levels off around " +
+      pct(best.val_acc) + ": the network fits its training paintings far better than new ones, a gap that more images per painter usually narrows. " +
+      "The reported model is epoch " + best.epoch + ", the best on validation; because it is chosen on the same paintings it is scored on, its figure is slightly optimistic.";
+    function draw() {
+      const W = Math.max(300, el.clientWidth), Ht = 230, pad = {l: 40, r: 14, t: 14, b: 30};
+      const n = H.length;
+      const x = e => pad.l + (W - pad.l - pad.r) * (e - 1) / Math.max(1, n - 1);
+      const y = v => Ht - pad.b - (Ht - pad.t - pad.b) * v;
+      const line = (key, color, dash) => '<polyline fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="6 5"' : "") +
+        ' points="' + H.map(e => x(e.epoch).toFixed(1) + "," + y(e[key]).toFixed(1)).join(" ") + '"/>';
+      let g = "";
+      for (const v of [0, 0.25, 0.5, 0.75, 1]) g += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (pad.l - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + pct(v) + "</text>";
+      for (const e of H) g += '<text x="' + x(e.epoch) + '" y="' + (Ht - 10) + '" text-anchor="middle">' + e.epoch + "</text>";
+      g += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(chance) + '" y2="' + y(chance) + '" stroke="var(--line-strong)" stroke-dasharray="3 4"/>';
+      g += '<line x1="' + x(best.epoch) + '" x2="' + x(best.epoch) + '" y1="' + pad.t + '" y2="' + y(0) + '" stroke="var(--gold)" stroke-dasharray="2 3"/>';
+      g += line("train_acc", "var(--muted-dot)", true) + line("val_acc", "var(--gold)", false);
+      g += '<circle cx="' + x(best.epoch) + '" cy="' + y(best.val_acc) + '" r="5" fill="var(--gold)" stroke="var(--surface)" stroke-width="2"/>';
+      el.innerHTML = '<svg width="' + W + '" height="' + Ht + '" role="img" aria-label="Training and validation accuracy by epoch">' + g + "</svg>" +
+        '<div class="legend"><span><svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--gold)" stroke-width="2.5"/></svg> validation accuracy</span>' +
+        '<span><svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--muted-dot)" stroke-width="2.5" stroke-dasharray="6 5"/></svg> training accuracy</span>' +
+        '<span><span class="key gold"></span>reported epoch (' + best.epoch + ")</span><span>dashed grey: chance · x axis: epoch</span></div>";
+    }
+    draw();
+    let w = innerWidth;
+    addEventListener("resize", () => { if (innerWidth !== w) { w = innerWidth; draw(); } });
+  })();
+
+  // grad-cam
+  if (D.gradcam) document.getElementById("gradcam").src = D.gradcam;
+  else document.getElementById("gradcam-card").hidden = true;
+
+  // checks
+  const facts = [];
+  if (D.repeat) {
+    const r = D.repeat, ok = r.history_identical && D.models.every(m => r[m.key]);
+    const secs = r.train_seconds.map(s => s == null ? "?" : Math.round(s / 60) + " min");
+    facts.push('<div class="fact"><h3>Trained twice, same answer</h3><p>The same training request was run a second time as a separate job on another GitHub Actions runner (<code>' + esc(r.name) + "</code>). Training took " + secs[0] + " the first time and " + secs[1] + " the second, and " +
+      (ok ? "every result came out identical:" : "the results differ:") + "</p><ul class=\"checks\">" +
+      '<li class="' + (r.history_identical ? "" : "no") + '">loss and accuracy at every one of the ' + D.history.length + " epochs</li>" +
+      D.models.map(m => '<li class="' + (r[m.key] ? "" : "no") + '">' + esc(m.label) + ": confusion matrix, accuracy and top-3</li>").join("") +
+      "</ul><p style=\"margin-top:10px\">The pipeline is deterministic from its seeds, so these numbers can be reproduced by rerunning the workflow, not just read from committed files.</p></div>");
+  }
+  if (D.previous) {
+    const p = D.previous;
+    facts.push('<div class="fact"><h3>What more data and training bought</h3><p>An earlier run (<code>' + esc(p.name) + "</code>) used " + p.images.toLocaleString() + " images, " + p.epochs + " epochs and " + p.unfreeze + " retrained stage" + (p.unfreeze === 1 ? "" : "s") +
+      ", and reached <b>" + pct(p.accuracy.v, 1) + "</b> (" + iv(p.accuracy) + ") with the painter in the top 3 " + pct(p.top3, 1) + " of the time.</p><p>This run used " + D.run.images.toLocaleString() + " images, " + D.run.epochs + " epochs and " + D.run.unfreeze +
+      " retrained stages, and reached <b>" + pct(cnn.accuracy.v, 1) + "</b> (" + iv(cnn.accuracy) + "). The two were scored on different validation sets (" + p.accuracy.n + " and " + cnn.accuracy.n + " paintings), so this is a direction, not a like-for-like measurement.</p></div>");
+  }
+  if (facts.length) document.getElementById("repeat-body").innerHTML = facts.join("");
+  else document.getElementById("repeat").hidden = true;
+
+  // notes and footer
+  document.getElementById("notes-body").innerHTML = D.notes_html;
+  if (!D.notes_html) document.querySelector(".notes").hidden = true;
+  document.getElementById("footer-text").innerHTML = "Generated from <a href=\"" + D.repo + "/tree/main/" + esc(D.run.path) + "\"><code>" + esc(D.run.path) + "</code></a>: " +
+    D.run.images.toLocaleString() + " paintings by " + K + " painters from the <code>" + esc(D.run.source || "WikiArt") + "</code> dataset, " + D.run.train.toLocaleString() + " for training and " + D.run.val + " held out for validation, every fifth painting by each painter. " +
+    "<a href=\"" + D.repo + "\">Code, pipeline and raw results</a>.";
+})();
+</script>
+</body>
+</html>
